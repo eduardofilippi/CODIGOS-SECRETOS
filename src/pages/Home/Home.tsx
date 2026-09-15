@@ -17,11 +17,31 @@ import planetaVit2 from '../../assets/planets/planeta-vit-2.webp';
 import glow from '../../assets/effects/glow.webp';
 import destello from '../../assets/effects/destello.webp';
 import auriculares from '../../assets/prizes/auriculares.webp';
+/* El auricular de MOBILE va aparte. La capa se dibuja a 78x78 px de diseno, que
+   en un telefono a 3x son unos 229 px fisicos, y `auriculares.webp` tiene 168:
+   se estiraba 1,36x, el peor de los tres premios del cumulo. Este PNG sale del
+   original de la clienta a 4167 px. Es el mismo producto en otra pose —mas
+   frontal, con las dos copas a la vista—, cambio aprobado el 03-09-2026 porque
+   del dibujo actual no existe version en alta. ESCRITORIO SIGUE CON EL WEBP: su
+   capa mide 168x169, o sea exactamente el tamano del archivo, y ahi no hay nada
+   que corregir. */
+import auricularesMobile from '../../assets/prizes/auriculares-mobile.png';
 import playstation from '../../assets/prizes/playstation.webp';
 /* En mobile el cúmulo lleva la consola SOLA: landing.png no dibuja el joystick,
    que sí trae `playstation.webp` y es el que usa la composición de desktop. */
-import playstationConsola from '../../assets/prizes/playstation-consola.webp';
-import nintendo from '../../assets/prizes/nintendo.webp';
+import playstationConsola from '../../assets/prizes/playstation-consola.png';
+/* El Nintendo del landing, en las DOS composiciones. Reemplazo de imagen pedido
+   el 03-09-2026: el Switch OLED blanco visto de frente, con la pantalla
+   encendida. Va en PNG y en un solo archivo para escritorio y mobile, que antes
+   eran dos —`nintendo.webp` y `nintendo-mobile.png`— porque el asset viejo
+   llegaba comprimido y en mobile convenia el original sin perdida. Con la imagen
+   nueva esa distincion deja de tener sentido.
+
+   MISMO LIENZO QUE EL ASSET VIEJO: 325x326, asi que la capa no cambia de caja ni
+   de posicion en ninguna de las dos vistas. El aparato queda mas ancho y mas
+   bajo porque la pose es otra —el nuevo esta horizontal y el anterior en
+   diagonal—, no porque se haya tocado ninguna medida. */
+import nintendo from '../../assets/prizes/nintendo.png';
 import barco from '../../assets/promo/barco.webp';
 
 /**
@@ -292,7 +312,7 @@ function HomeMobile({ onStart }: { onStart: () => void }) {
         <FloatingLayer amplitude={10} duration={3.6} delay={0.1} rotate={-3}
           className="mabs" style={mbox({ x: 199, y: 197, w: 78, h: 78, sceneH: SCENE_H })}
           data-figma="70:174">
-          <img src={auriculares} alt="" aria-hidden="true" className="mlayer-img" fetchPriority="low" />
+          <img src={auricularesMobile} alt="" aria-hidden="true" className="mlayer-img" fetchPriority="low" />
         </FloatingLayer>
 
         <FloatingLayer amplitude={9} duration={4.2} delay={0.6} rotate={-2}

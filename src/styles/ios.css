@@ -80,4 +80,345 @@
         0 4px 10px #212f5c;
     }
   }
+
+  /* EL CIELO ASOMANDO DEBAJO DEL PLANETA · iPhone en retrato.
+
+     LA PIEZA QUE FALTA YA EXISTÍA EN EL PROYECTO. `mobile-stage.css` declara
+
+         min-height: calc(var(--mstage-alto-util) - var(--mstage-corrimiento))
+
+     y su comentario describe este defecto palabra por palabra: «así lo que se
+     apoya en el pie —como la superficie del planeta— llega al borde y no
+     reaparece el cielo debajo». El bloque de RETRATO la pisa con
+     `min-height: 0` para que el alto lo fije el `aspect-ratio` del frame, que
+     es lo que hace que el lienzo recorte como recorta el frame. Todo correcto,
+     salvo en un caso: cuando el teléfono es MÁS ALTO que la proporción del
+     diseño, el lienzo termina antes que la pantalla y ahí aparece la franja.
+
+     LA CUENTA. El lienzo mide el alto del frame y sube 62 px de diseño para que
+     su cero sea el borde inferior de la barra de estado, así que su borde
+     inferior cae en el alto ÚTIL del diseño: 851 px en los frames de 913. En un
+     iPhone 15 eso son 851 × 393/402 = 832 px de CSS, contra 852 de pantalla.
+
+     MEDIDO en cuatro iPhones, al final del scroll, el sobrante del lienzo
+     respecto del borde inferior de la ventana:
+
+                        393x852   402x874   430x932   390x844
+       las seis de 913    -20       -23       -22       -18   <- hueco
+       las cuatro de 969   +0        +0        +0        +0
+
+     O sea que el hueco está en inicio, participar, registro, premios, código y
+     bases, que además NO scrollean: la franja se ve siempre. Las cuatro
+     pantallas de resultado no lo tienen, porque su frame de 969 es más alto que
+     el teléfono y la página scrollea.
+
+     Es un PISO de alto, no una altura fija: donde el frame ya es más alto que la
+     pantalla —las cuatro de resultado— el `aspect-ratio` gana y esto no hace
+     nada. Donde el teléfono es más alto, el piso estira hasta el borde.
+
+     Y HAY DOS RECORTES, NO UNO. Estirar el lienzo no alcanza: en las pantallas
+     con planeta al pie el recorte vive en el BLOQUE de adentro, que tiene su
+     propio `overflow-y: clip` y no crece con el lienzo. Medido en un iPhone 15,
+     los hijos directos del lienzo:
+
+       pantalla     bloque          alto   termina en   overflow-y
+       inicio       .home-m          840      852        visible
+       participar   .welcome-m       820      832        visible
+       registro     .register-m      658      670        visible
+       premios      .prizes-m        699      711        visible
+       código       .codehelp-m      893      832        clip
+       bases        .terms-m         893      832        clip
+
+     De las dos que recortan, sólo UNA tiene planeta al pie, y conviene no
+     confundirlas:
+
+       código  `.codehelp-m__planet`   fondo #061c67, alto 1047, llega a y=1652
+       bases   `.terms-m__planeta`     TRANSPARENTE, alto 87, termina en y=818
+
+     El de bases es `planeta vit 1 1` del Figma —(278, 810, 182, 89), un
+     planetita decorativo con desenfoque—, no una superficie. Bases NO tiene
+     piso de planeta: ahí el cielo al pie ES el diseño, y medido en los seis
+     tamaños su último píxel es azul de cielo con o sin esta regla. Así que bases
+     queda fuera: estirar su bloque no arreglaría nada y destaparía 20 px de una
+     pantalla que no tiene el defecto.
+
+     En código, en cambio, el bloque corta el planeta en 832 con la pantalla
+     terminando en 852. Esos 20 px son cielo, y ahí el cielo es azul brillante:
+     #061c67 de un lado, #0349d5 del otro. Un filo recto en las 393 columnas.
+
+     LAS CUATRO DE RESULTADO QUEDAN FUERA, y conviene dejar dicho por qué, porque
+     es donde se reportó el defecto por segunda vez —un 17 Pro en
+     `codigo-inexistente`— y aun así la medición dice que ahí no falta nada.
+
+     Su planeta va envuelto en `.result-m__planet-clip`, anclado con
+     `top: 753 · bottom: 0`, así que sigue al lienzo. Y el lienzo, con el frame
+     de 969, mide W×2.410 y arranca en −W×0.1542: en un 17 Pro son 969 de alto
+     terminando en y=907, contra una ventana de 874. Sobran 33 px de scroll, así
+     que el lienzo cubre la ventana en cualquier posición, también con la barra
+     de Safari plegada. Medido en cinco tamaños —390, 393, 402, 430 y 440 de
+     ancho—: el último píxel es el navy del planeta, #061c67, en las cuatro
+     pantallas.
+
+     Se probó agregarlas al piso y NO cambia un píxel: su `aspect-ratio` ya da
+     más alto que `lvh` más los 62, así que gana el aspect y el piso no hace
+     nada. Una regla que no cambia nada no se deja puesta.
+
+     Las otras que quedan fuera: `.home-m` ya llega al borde; `.register-m` y
+     `.prizes-m` terminan mucho más arriba y ahí el cielo es el fondo previsto,
+     sin planeta que se corte; y bases, por lo dicho arriba.
+
+     NO SE RELLENA CON UN COLOR PLANO. Se podría pintar esa franja de #061c67,
+     pero no hace falta y sería peor: el planeta YA está dibujado hasta bien
+     abajo, así que dejando de recortarlo aparece el planeta de verdad, con su
+     degradado y sus estrellas, en vez de una banda lisa que se notaría contra
+     el resto.
+
+     `lvh` Y NO `dvh`. El hueco se abre justo cuando la barra de Safari se
+     pliega y el alto útil CRECE. Con `svh` —lo que usa `--mstage-alto-util`— el
+     piso se calcularía contra el alto chico y la franja volvería al plegarse la
+     barra. `dvh` también cubre, pero recalcula el layout en cada transición de
+     la barra; `lvh` es el alto máximo, así que cubre siempre y no se mueve.
+     Por eso el piso se escribe acá y no se toca esa variable, que la comparten
+     Android y escritorio.
+
+     POR QUÉ NO SE USA `--mstage-corrimiento` ACÁ, aunque sea justo el valor que
+     hay que sumar. Esa variable vale `-1 * var(--mstage-w) * 62 / 402`, y
+     `--mstage-w` es `min(100%, 520px)`. Ese `100%` sólo significa «el ancho»
+     cuando la variable se usa en `width` o en `margin`; en `min-height` los
+     porcentajes se resuelven contra el ALTO del bloque contenedor, que acá es
+     indefinido. El proyecto ya avisa de esta trampa en `stage.css`, donde el
+     corrimiento va en `margin-top` y no en `top` por exactamente lo mismo.
+     Probado: con la variable, el `min-height` se calculaba —se veía en el
+     estilo computado— y no floreaba nada; el lienzo seguía en 893 px con un
+     piso supuesto de 912. Con `vw` la base es el ancho en cualquier propiedad.
+
+     Los números no son mágicos: son `--mstage-barra` (62) sobre
+     `--mstage-diseno-w` (402), la misma proporción que usa el corrimiento, y el
+     tope es `--mstage-max`.
+
+     Android no cumple el `@supports`; escritorio y el iPhone en horizontal
+     quedan fuera del media query. No se toca ninguna coordenada, ni el ancho,
+     ni la escala: sólo hasta dónde llega el borde de abajo. */
+  @media (orientation: portrait) and (max-width: 899px) {
+    .mstage__canvas:has(.codehelp-m),
+    .codehelp-m {
+      min-height: calc(
+        100lvh - var(--safe-top) - var(--safe-bottom) +
+          min(100vw, var(--mstage-max)) * var(--mstage-barra) /
+          var(--mstage-diseno-w)
+      );
+    }
+  }
+  /* EL PLANETA CORTADO AL SCROLLEAR · las cuatro pantallas de resultado.
+
+     OTRO DEFECTO, NO EL DE ARRIBA. Al de arriba le faltaba alto y se veía
+     quieto; este sólo aparece MIENTRAS SE SCROLLEA, y justo en las cuatro
+     pantallas que el arreglo anterior deja fuera. Reportado en un 17 Pro en
+     `codigo-inexistente` y presente «desde el 14 en adelante».
+
+     LA CAUSA SON DOS AZULES DISTINTOS. `global.css` pinta
+
+         body { background: #0b1642 }   rgb(11, 22, 66)
+
+     y la superficie del planeta es `#061c67`, rgb(6, 28, 103). Distinto tono y
+     distinto brillo. Ese fondo del cuerpo no se ve nunca... salvo cuando iOS
+     rebota.
+
+     POR QUÉ SÓLO EN iPHONE Y SÓLO ACÁ. Las cuatro de resultado son las únicas
+     que scrollean: su frame de 969 da un documento más alto que la ventana, y
+     queda recorrido de sobra —medido, al final del scroll: 36 px en un 13, 35 en
+     un 15, 33 en un 17 Pro, 38 en un Pro Max, 37 en un 17 Pro Max—. Al llegar al
+     final y seguir tirando, WebKit despega el documento del borde y pinta esa
+     franja con el fondo de la RAÍZ, que sale del `body`. Ahí aparece el #0b1642
+     debajo del #061c67 del planeta, con un filo recto de lado a lado: el planeta
+     «cortado». Android no descubre fondo al pasarse del final —hace un destello
+     y nada más— y en escritorio no hay rebote.
+
+     Cuadra con lo medido y con lo reportado: en las seis pantallas que no
+     scrollean esto no puede pasar, y son justamente las que nadie reportó por
+     este síntoma; quietas, las cuatro de resultado terminan en navy del planeta
+     en los cinco tamaños. Sólo se rompe en movimiento.
+
+     SE IGUALA EL COLOR; NO SE PUEDE FRENAR EL REBOTE. Lo primero que se probó
+     fue `overscroll-behavior-y: none`, que es la forma limpia de que no haya
+     sobrepaso. NO SIRVE ACÁ: WebKit no implementa la propiedad. Medido con
+     `CSS.supports('overscroll-behavior-y','none')` en WebKit 26.5 —el Safari más
+     nuevo que hay para probar—, devuelve `false`; Chromium devuelve `true`. O
+     sea que esa regla no habría hecho nada en el único navegador donde pasa el
+     defecto, y de paso habría cambiado el sobrepaso en Android, que es lo que no
+     hay que tocar. Se descartó.
+
+     Queda igualar el color, que es además lo que se pidió: que la franja salga
+     del mismo azul del planeta. Con el fondo del cuerpo en #061c67 el rebote
+     sigue existiendo pero deja de notarse, porque lo que descubre es el mismo
+     tono que la superficie que lo tapa. No hay filo.
+
+     POR QUÉ ESTO NO CAMBIA NADA MÁS. El fondo del cuerpo NO SE VE en iPhone
+     vertical. Medido: se lo pintó de magenta y se contaron sus píxeles en las
+     diez pantallas por los cinco tamaños —50 capturas, al final del scroll—, y
+     el resultado es CERO en las cincuenta. El lienzo lo tapa entero. Así que
+     este color no puede alterar nada de lo que hoy se dibuja: su único papel es
+     el del rebote.
+
+     VA ACOTADO A VERTICAL, y es a propósito. En horizontal el teléfono es más
+     ancho que el tope de 520 px del lienzo, así que el fondo del cuerpo SÍ se ve
+     como dos barras a los costados. Ahí no está medido y no se toca.
+
+     Lo que sí queda distinto es el rebote de ARRIBA, que pasa de #0b1642 a
+     #061c67. Los dos son navy oscuro y ninguno coincide con el cielo del diseño,
+     así que ese extremo no mejora ni empeora: no se puede acertar en los dos
+     bordes con un color solo.
+
+     ANDROID NO SE TOCA, por pedido expreso, y no lo necesita: su sobrepaso no
+     descubre fondo. Escritorio queda fuera del `@supports`.
+
+     LA ESPECIFICIDAD, COMO EN EL RESTO DEL ARCHIVO. `global.css` declara el
+     fondo con el atajo `background` sobre `body`, que pesa lo mismo que un
+     `body` de acá: quedaría decidido por el orden de carga. Por eso se escribe
+     `:root` y `html body`, que pesan más, y gana esta regla venga cuando venga.
+     Se pintan los dos elementos porque el fondo de la raíz sale del `html` si lo
+     tiene, y si no se hereda del `body`; con los dos iguales no depende de cuál
+     de los dos caminos tome el navegador. */
+  @media (orientation: portrait) and (max-width: 899px) {
+    :root,
+    html body {
+      background-color: #061c67;
+    }
+  }
+
+  /* EL CIELO QUE SE QUEDA QUIETO · la causa de fondo de todo lo anterior.
+
+     LO ANTERIOR NO ALCANZABA, y esta es la razón. El cielo NO scrollea con la
+     pagina: `.mstage__sky` es `position: fixed`, hermana del lienzo, con la foto
+     a pantalla completa y 160 px de sangrado por arriba y por abajo. Cuando iOS
+     rebota, el DOCUMENTO se despega del borde y sube, pero esa capa se queda
+     clavada al viewport. Entonces lo que aparece debajo del planeta no es el
+     fondo del cuerpo —por eso pintarlo no cambio nada, el cielo fijo se dibuja
+     encima— sino la foto del cielo, azul brillante y con estrellas. El filo
+     recto es el borde de abajo del lienzo.
+
+     MEDIDO, forzando una ventana mas alta que el lienzo —que geometricamente es
+     la misma situacion que el rebote: el lienzo termina antes que el viewport y
+     la capa fija queda a la vista—. A 402x960, columna del medio:
+
+       y=906   6,28,103     <- superficie del planeta
+       y=907   17,126,228   <- cielo. En un pixel.
+
+     QUE PANTALLAS. Se midio el ultimo pixel de adentro del lienzo y el primero
+     de afuera, en las diez, al final del scroll:
+
+       inicio         37,72,142  ->  20,60,146    cielo contra cielo
+       participar     41,94,189  ->   7,73,201    cielo contra cielo
+       registro       21,79,183  ->   7,73,201    cielo contra cielo
+       premios        17,93,183  ->  16,92,182    cielo contra cielo
+       bases           4,72,213  ->   4,72,211    cielo contra cielo
+       codigo          6,28,103  ->   4,72,211    PLANETA contra cielo
+       ganaste         6,28,103  ->  15,126,228   PLANETA contra cielo
+       perdiste        6,28,103  ->  15,126,228   PLANETA contra cielo
+       codigo-usado    6,28,103  ->  15,126,228   PLANETA contra cielo
+       codigo-inexist  6,28,103  ->  15,126,228   PLANETA contra cielo
+
+     Las cinco de arriba terminan en cielo y abajo sigue cielo: no hay costura y
+     no se tocan. Las cinco de abajo son las que tienen el planeta al pie, y son
+     exactamente las cinco donde se reporto el corte.
+
+     TRES INTENTOS DESCARTADOS, los tres MEDIDOS, porque cada uno parece la
+     solucion obvia y no lo es:
+
+       1. Relleno pegado al LIENZO (`::after` de `.mstage`, `top: 100%`), para
+          que acompanara al documento. NO SIRVE: un elemento absoluto sigue
+          generando desbordamiento DESPLAZABLE, asi que el documento paso de 907
+          a 1781 px y la pagina gano 900 px de scroll vacio.
+       2. `overflow-clip-margin` sobre el lienzo, que extenderia el recorte sin
+          tocar layout ni scroll. Seria exacto. NO EXISTE EN WEBKIT:
+          `CSS.supports('overflow-clip-margin','100px')` da `false` en WebKit
+          26.5 y `true` en Chromium.
+       3. Un RECTANGULO en la capa fija por debajo del horizonte. Cubre el hueco,
+          pero el horizonte del planeta es una CURVA: a la altura donde el
+          rectangulo empieza, en las esquinas todavia hay cielo. Medido en
+          reposo, asomaban ~2.000 px por pantalla en las cuatro de resultado.
+
+     LO QUE FUNCIONA es copiar el planeta. Los dos planetas del proyecto son EL
+     MISMO CIRCULO —`.codehelp-m__planet` (73:819) y `.result-m__planet`
+     (74:1030), los dos 1254x1071 en x=-414 con radio 50% y relleno #061C67— y en
+     vertical el lienzo mide lo mismo que la pantalla, asi que `1cqw` es `1vw` y
+     ese circulo se puede reescribir en unidades del viewport sin aproximar nada:
+     `left: -102.985vw`, `311.94vw` x `266.418vw`.
+
+     Va como `::after` de `.mstage__sky`, que es `fixed`: queda clavado al
+     viewport, encima de la foto del cielo y debajo del lienzo. En reposo cae
+     EXACTAMENTE sobre el planeta de verdad —misma curva, mismo color, misma
+     posicion— asi que no se ve. Cuando el rebote despega la pagina, el planeta
+     sube y este se queda: lo que el planeta deja al descubierto ya esta pintado,
+     con la misma curva y el mismo azul.
+
+     DONDE SE APOYA, y de donde salen los numeros. Todo en unidades de diseno
+     divididas por 402, que es como esta escrito el resto del archivo:
+
+       alto del lienzo      969 / 402 = 241.045vw
+       corrimiento           62 / 402 =  15.423vw   (el lienzo arranca en -eso)
+       borde de abajo                  = 225.622vw
+       horizonte resultado  753 / 402 = 187.313vw  ->  225.622 - 171.890 = 53.731
+       horizonte codigo     681 / 402 = 169.403vw  ->  169.403 -  15.423 = 153.980
+
+     En las de resultado el horizonte queda a 53.731vw del borde inferior del
+     lienzo, que al final del scroll es el borde de la ventana: de ahi
+     `100vh - 53.731vw`. En codigo el lienzo llega hasta el borde por la regla de
+     mas arriba, asi que el horizonte cae directo en `153.980vw`. Comprobado
+     contra la medicion: a 402 de ancho dan 658 y 619 px, y lo medido en el
+     navegador fue 658 y 619.
+
+     CUANTO AGUANTA. El circulo mide 266.418vw de alto —1.071 px a 402 de
+     ancho— y de eso se ven 216: quedan mas de 850 px pintados por debajo. Un
+     rebote de iOS no se acerca. Y pasados los 160 px de sangrado de la capa fija
+     lo que se ve es el fondo del cuerpo, que por la regla de aca arriba es este
+     mismo color: los dos remiendos se encadenan y el color no cambia nunca.
+
+     LO QUE SE NOTA, dicho con precision: durante el rebote el horizonte se queda
+     QUIETO en vez de subir con la pagina, porque el que se ve es el de esta
+     copia. Es el precio de resolverlo con una capa fija, y es preferible a que
+     se abra una franja de cielo.
+
+     NO AGREGA SCROLL: vive dentro de `.mstage__sky`, que es `fixed` y
+     `overflow: hidden`. Verificado, el alto del documento no se mueve.
+
+     NO SE VE EN REPOSO, medido igual que siempre: pintado de magenta y contando
+     sus pixeles en las diez pantallas por cinco tamanos, da CERO en las
+     cincuenta.
+
+     ANDROID NO SE TOCA, por pedido expreso: no rebota descubriendo fondo.
+     Escritorio queda fuera del `@supports`. */
+  @media (orientation: portrait) and (max-width: 899px) {
+    .mstage:has(.codehelp-m) .mstage__sky::after,
+    .mstage:has(.result-m) .mstage__sky::after {
+      content: '';
+      position: absolute;
+      /* El circulo del Figma, en unidades del viewport. */
+      left: -102.985vw;
+      width: 311.94vw;
+      height: 266.418vw;
+      border-radius: 50%;
+      background-color: #061c67;
+      z-index: 0;
+
+      /* MEDIO PIXEL HACIA ABAJO, y hace falta. Con el circulo puesto en su
+         posicion exacta, a 393 de ancho —un iPhone 15— asomaban 180 px en
+         reposo: menos de media fila, o sea la curva de la copia quedando una
+         fraccion de pixel por encima de la del planeta por redondeo. En los
+         otros cuatro anchos daba cero. Bajarlo medio pixel lo lleva a cero en
+         los cinco sin mover nada mas: por debajo, la copia queda tapada por el
+         planeta, que es justo lo que se busca. */
+      --ios-planeta-pelo: 0.5px;
+    }
+
+    /* La capa fija empieza `--mstage-sangrado` por encima de la pantalla, asi
+       que hay que devolverle esos px para contar desde el borde de arriba. */
+    .mstage:has(.result-m) .mstage__sky::after {
+      top: calc(var(--mstage-sangrado) + 100vh - 53.731vw + var(--ios-planeta-pelo));
+    }
+
+    .mstage:has(.codehelp-m) .mstage__sky::after {
+      top: calc(var(--mstage-sangrado) + 153.980vw + var(--ios-planeta-pelo));
+    }
+  }
 }

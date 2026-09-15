@@ -1,15 +1,15 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Stage } from '../../components/layout/Stage';
 import { Deco } from '../../components/layout/Deco';
 import { PrizeCarousel } from '../../components/promo/PrizeCarousel';
 import { promoApi } from '../../services/promoApi';
 import { centeredText } from '../../app/stage';
 import type { Prize } from '../../types/promo';
+import { MOBILE_PRIZE_IMAGES } from './mobile-prize-images';
 import './prizes.css';
 
 import { LogoCodigos } from '../../components/promo/LogoCodigos';
 import logoCodigos from '../../assets/logos/codigos-secretos.webp';
-import glow from '../../assets/effects/glow.webp';
 import fondoPremiosDesktop from '../../assets/backgrounds/fondo-premios-desktop.png';
 
 /** PREMIOS — Figma 57:86. El catálogo llega de `promoApi.getPrizes()`. */
@@ -31,6 +31,18 @@ export default function Prizes() {
 
   const onActiveChange = useCallback((prize: Prize) => setActiveName(prize.name), []);
 
+  /* La página de Premios mobile usa los originales PNG transparentes enviados
+     por el cliente. El catálogo compartido queda intacto para desktop, Ganaste
+     y cualquier otra pantalla que consuma estos premios. */
+  const mobilePrizes = useMemo(
+    () =>
+      prizes.map((prize) => {
+        const image = MOBILE_PRIZE_IMAGES[String(prize.id)];
+        return image ? { ...prize, image, thumb: image } : prize;
+      }),
+    [prizes],
+  );
+
   const carousel = <PrizeCarousel prizes={prizes} onActiveChange={onActiveChange} />;
 
   return (
@@ -48,13 +60,9 @@ export default function Prizes() {
           data-figma-ejes="x,w"
           data-figma-omitir="pintura"
         >
-          {/* Estela que barre por detrás del premio activo. Es el mismo asset
-              que usa el reveal de GANASTE, no una aproximación en CSS. */}
-          <img src={glow} alt="" aria-hidden="true" className="prizes-m__arc" data-figma="73:744" />
-
           <LogoCodigos className="prizes-m__logo" data-figma="73:732" />
           <PrizeCarousel
-            prizes={prizes}
+            prizes={mobilePrizes}
             onActiveChange={onActiveChange}
             withThumbs
             caption={activeName}

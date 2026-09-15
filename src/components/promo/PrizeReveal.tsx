@@ -80,7 +80,7 @@ export function PrizeReveal({ prize }: PrizeRevealProps) {
         <div className="abs" style={{ ...box(GLOW_2), transform: GIRO_2 }} data-figma="23:3138">
           <img src={glow} alt="" aria-hidden="true" className="reveal__glow reveal__glow-img" />
         </div>
-        {prize && (
+        {prize?.image && (
           <img src={prize.image} alt={prize.name} className="abs reveal__prize" style={box(PRIZE)} />
         )}
       </div>
@@ -153,7 +153,7 @@ export function PrizeReveal({ prize }: PrizeRevealProps) {
       </div>
 
       {/* Premio: emerge desde dentro del cofre hacia su posición final. */}
-      {prize && (
+      {prize?.image && (
       <motion.div
         className="abs reveal__prize-wrap"
         style={box(PRIZE)}

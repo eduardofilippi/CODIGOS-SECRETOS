@@ -46,7 +46,29 @@ jobs:
       - run: npm ci
 
       # Falla el build si hay errores de tipos, antes de publicar nada.
+      #
+      # LAS VARIABLES VAN ACÁ O NO VAN. Vite las resuelve en tiempo de
+      # COMPILACIÓN: `import.meta.env.VITE_API_URL` se reemplaza por el literal
+      # dentro del JavaScript publicado. Si el paso de build no las recibe, el
+      # sitio se publica con la cadena vacía y `promoApi.ts` elige el mock —o
+      # sea que la promo saldría al aire sin backend, sin fallar y sin avisar—.
+      #
+      # Se leen de `vars`, no de `secrets`, y a propósito: quedan incrustadas en
+      # el bundle, así que sólo pueden contener valores PÚBLICOS. La URL del
+      # backend y la clave de sitio de reCAPTCHA lo son. Nunca poner acá la
+      # clave secreta de reCAPTCHA ni credenciales de Avimovil.
+      #
+      # Hay que cargarlas antes en Settings → Secrets and variables → Actions →
+      # Variables:
+      #   VITE_API_URL=https://promo.edge.com.py/purosol
+      #   VITE_RECAPTCHA_SITE_KEY=6LfcYIQtAAAAAAqpWHzZ6y-cTCPOPEBXIu8XJWOD
+      #
+      # Si las variables no existen, `vars.X` se resuelve como cadena vacía y el
+      # sitio vuelve al mock: el mismo comportamiento que hoy, sin romperse.
       - run: npm run build
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+          VITE_RECAPTCHA_SITE_KEY: ${{ vars.VITE_RECAPTCHA_SITE_KEY }}
 
       - uses: actions/configure-pages@v6
 

@@ -1,0 +1,24 @@
+# Fuera del contexto de build: acelera el COPY y evita filtrar cosas.
+node_modules
+dist
+
+# Git y CI
+.git
+.gitignore
+.github
+
+# Variables locales: NO deben entrar a la imagen. Si .env entrara, Vite lo
+# leería y pisaría los --build-arg con los valores de tu máquina (localhost).
+.env
+.env.*
+
+# Material pesado que el build NO usa (assets crudos, specs de Figma, capturas).
+figma
+recursos
+audit-shots
+
+# Docker y varios
+Dockerfile
+.dockerignore
+*.log
+.DS_Store

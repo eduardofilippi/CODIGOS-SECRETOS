@@ -26,6 +26,7 @@ export const SCENARIOS: Scenario[] = [
   'CODE_ALREADY_USED',
   'CODE_NOT_FOUND',
   'REGISTER_REQUIRED',
+  'RATE_LIMITED',
 ];
 
 export const SCENARIO_LABELS: Record<Scenario, string> = {
@@ -36,6 +37,7 @@ export const SCENARIO_LABELS: Record<Scenario, string> = {
   CODE_ALREADY_USED: 'Código ya utilizado',
   CODE_NOT_FOUND: 'Código inexistente',
   REGISTER_REQUIRED: 'Requiere registro',
+  RATE_LIMITED: 'Límite de intentos',
 };
 
 const STORAGE_KEY = '__promo_scenario__';

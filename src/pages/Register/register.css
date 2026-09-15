@@ -94,6 +94,15 @@
   }
 }
 
+/* Aviso del flujo (p. ej. límite de validaciones) tras registrarse. */
+.register__flow-error {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.3cqw;
+  color: #8f1f0a;
+  text-align: center;
+}
+
 /* ---------- Mobile ---------- */
 /* -------------------------------------------------------------------------
    Composición mobile — Figma "Registro.png". Coordenadas en el comentario de
@@ -386,5 +395,17 @@
     width: 48.92% !important;      /* 101.4 */
     height: 4.95cqw !important;    /* 19.9 */
     min-height: 0 !important;
+  }
+
+  .register-m__flow-error {
+    position: absolute;
+    left: 9.5%;
+    top: 84%;
+    width: 81.3%;
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 2.6cqw;
+    color: #8f1f0a;
+    text-align: center;
   }
 }

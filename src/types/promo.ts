@@ -40,6 +40,12 @@ export interface PromoCode {
 
 export interface Prize {
   id: string;
+  /**
+   * Id numérico del premio en Avimovil (0–19). Es la clave con la que el
+   * backend identifica el premio ganado (`premio-<id>-<nombre>`); el adapter la
+   * usa para cruzar la respuesta con este catálogo y resolver imagen y copy.
+   */
+  avimovilId?: number;
   /** Nombre comercial visible. Nunca códigos internos ni specs de depósito. */
   name: string;
   /** URL del asset ya resuelto por el adapter. */
@@ -83,7 +89,12 @@ export type PromoCodeStatus =
   | 'LOSE'
   | 'CODE_ALREADY_USED'
   | 'CODE_NOT_FOUND'
-  | 'REGISTER_REQUIRED';
+  | 'REGISTER_REQUIRED'
+  /**
+   * El participante superó el límite de validaciones (Avimovil: `limite`). No
+   * tiene pantalla propia: el flujo muestra un mensaje en la carga de código.
+   */
+  | 'RATE_LIMITED';
 
 export interface PromoCodeResult {
   status: PromoCodeStatus;

@@ -30,10 +30,17 @@ export interface PromoApi {
 export { MockPromoApi } from './mockPromoApi';
 
 import { MockPromoApi } from './mockPromoApi';
+import { HttpPromoApi } from './httpPromoApi';
 
 /**
  * PUNTO DE SUSTITUCIÓN PARA BACKEND
  * ---------------------------------
- * Reemplazar por:  export const promoApi: PromoApi = new HttpPromoApi(baseUrl);
+ * Con `VITE_API_URL` cargada en `.env` se usa el backend real
+ * (codigos-secretos-backend); vacía, siguen los datos de ejemplo. Así la demo
+ * de GitHub Pages sigue funcionando sin servidor.
  */
-export const promoApi: PromoApi = new MockPromoApi();
+const API_BASE_URL = (import.meta.env.VITE_API_URL ?? '').trim();
+
+export const promoApi: PromoApi = API_BASE_URL
+  ? new HttpPromoApi(API_BASE_URL)
+  : new MockPromoApi();

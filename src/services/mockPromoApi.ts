@@ -15,6 +15,7 @@ import { MOCK_LATENCY_MS, getForcedPrizeId, getScenario } from '../mocks/scenari
 import { MOCK_PRIZES } from '../mocks/prizes';
 import { findCode, normalizeCode, seedRedeemed } from '../mocks/codes';
 import { getTermsText } from '../mocks/terms';
+import { readStoredParticipant, saveStoredParticipant, toParticipant } from './participantStorage';
 
 const delay = (ms = MOCK_LATENCY_MS) => new Promise<void>((r) => setTimeout(r, ms));
 
@@ -32,6 +33,12 @@ const AUTO_CYCLE: PromoCodeStatus[] = ['WIN', 'LOSE', 'CODE_ALREADY_USED', 'CODE
  * vigencia de los códigos son responsabilidad del backend.
  */
 export class MockPromoApi implements PromoApi {
+  /**
+   * Respaldo en memoria para cuando no hay localStorage (modo privado, origen
+   * opaco): el registro y el contador viven acá hasta recargar la página. Con
+   * localStorage disponible manda `participantStorage`, igual que en el
+   * adapter real, y el registro sobrevive a la recarga.
+   */
   private registered = new Set<string>();
   private counts = new Map<string, number>();
   private autoIndex = 0;
@@ -42,7 +49,14 @@ export class MockPromoApi implements PromoApi {
 
   async checkParticipant(cedula: string): Promise<ParticipantCheckResult> {
     await delay(400);
+    // Interruptor de QA: fuerza la pantalla de REGISTRO aunque ya haya registro.
     if (getScenario() === 'REGISTER_REQUIRED') return { registered: false };
+
+    // Con registro guardado en este navegador se saltea el formulario, también
+    // después de recargar: es lo mismo que hace `HttpPromoApi`.
+    const stored = readStoredParticipant(cedula);
+    if (stored) return { registered: true, participant: toParticipant(stored.form) };
+
     if (!this.registered.has(cedula)) return { registered: false };
     return {
       registered: true,
@@ -66,11 +80,8 @@ export class MockPromoApi implements PromoApi {
     }
 
     this.registered.add(form.cedula);
-    this.counts.set(form.cedula, this.counts.get(form.cedula) ?? 0);
-    return {
-      ok: true,
-      participant: { cedula: form.cedula, fullName: form.fullName, city: form.city },
-    };
+    saveStoredParticipant(form);
+    return { ok: true, participant: toParticipant(form) };
   }
 
   async submitPromoCode({ cedula, code }: PromoCode): Promise<PromoCodeResult> {
@@ -80,10 +91,21 @@ export class MockPromoApi implements PromoApi {
 
     // Sólo los códigos efectivamente consumidos suman al contador.
     const consumed = status === 'WIN' || status === 'LOSE';
-    const next = (this.counts.get(cedula) ?? 0) + (consumed ? 1 : 0);
-    this.counts.set(cedula, next);
+    const next = this.currentCount(cedula) + (consumed ? 1 : 0);
+    this.setCount(cedula, next);
 
     return { status, code, codeCount: next, prize };
+  }
+
+  /** El contador sale del registro guardado; sin él, del respaldo en memoria. */
+  private currentCount(cedula: string): number {
+    return readStoredParticipant(cedula)?.codeCount ?? this.counts.get(cedula) ?? 0;
+  }
+
+  private setCount(cedula: string, count: number): void {
+    this.counts.set(cedula, count);
+    const stored = readStoredParticipant(cedula);
+    if (stored) saveStoredParticipant(stored.form, count);
   }
 
   /**
@@ -120,7 +142,7 @@ export class MockPromoApi implements PromoApi {
 
   async getCodeCount(cedula: string): Promise<UserCodeCount> {
     await delay(200);
-    return { cedula, count: this.counts.get(cedula) ?? 0 };
+    return { cedula, count: this.currentCount(cedula) };
   }
 
   async getPrizes(): Promise<Prize[]> {

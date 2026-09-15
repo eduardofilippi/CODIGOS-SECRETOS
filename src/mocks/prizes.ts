@@ -66,6 +66,7 @@ import tSkateMediano from '../assets/prizes/thumbs/skate-mediano.webp';
 export const MOCK_PRIZES: Prize[] = [
   {
     id: 'playstation-5',
+    avimovilId: 12,
     name: 'PlayStation 5',
     article: 'un',
     quantity: 4,
@@ -75,6 +76,7 @@ export const MOCK_PRIZES: Prize[] = [
   },
   {
     id: 'nintendo-switch-oled',
+    avimovilId: 8,
     name: 'Nintendo Switch OLED',
     article: 'una',
     quantity: 4,
@@ -84,6 +86,7 @@ export const MOCK_PRIZES: Prize[] = [
   },
   {
     id: 'kit-volante-pedales',
+    avimovilId: 10,
     name: 'Kit volante + pedales',
     article: 'un',
     quantity: 2,
@@ -94,6 +97,7 @@ export const MOCK_PRIZES: Prize[] = [
   },
   {
     id: 'columpio-jardin',
+    avimovilId: 7,
     name: 'Columpio de jardín',
     article: 'un',
     quantity: 3,
@@ -104,6 +108,7 @@ export const MOCK_PRIZES: Prize[] = [
   },
   {
     id: 'cama-elastica',
+    avimovilId: 6,
     name: 'Cama elástica',
     article: 'una',
     quantity: 5,
@@ -113,6 +118,7 @@ export const MOCK_PRIZES: Prize[] = [
   },
   {
     id: 'silla-gamer',
+    avimovilId: 14,
     name: 'Silla gamer',
     article: 'una',
     quantity: 3,
@@ -123,6 +129,7 @@ export const MOCK_PRIZES: Prize[] = [
   },
   {
     id: 'tablet-acer',
+    avimovilId: 17,
     name: 'Tablet Acer',
     article: 'una',
     quantity: 5,
@@ -133,6 +140,7 @@ export const MOCK_PRIZES: Prize[] = [
   },
   {
     id: 'aro-basketball',
+    avimovilId: 1,
     name: 'Aro de basketball',
     article: 'un',
     quantity: 5,
@@ -142,6 +150,7 @@ export const MOCK_PRIZES: Prize[] = [
   },
   {
     id: 'piscina-bestway',
+    avimovilId: 11,
     name: 'Piscina Bestway',
     article: 'una',
     quantity: 5,
@@ -152,6 +161,7 @@ export const MOCK_PRIZES: Prize[] = [
   },
   {
     id: 'monopatin-globber',
+    avimovilId: 19,
     name: 'Monopatín Globber',
     article: 'un',
     quantity: 5,
@@ -162,6 +172,7 @@ export const MOCK_PRIZES: Prize[] = [
   },
   {
     id: 'bicicleta-aro-24',
+    avimovilId: 5,
     name: 'Bicicleta Milano aro 24',
     article: 'una',
     quantity: 3,
@@ -171,6 +182,7 @@ export const MOCK_PRIZES: Prize[] = [
   },
   {
     id: 'jbl-flip-7',
+    avimovilId: 16,
     name: 'Speaker JBL Flip 7',
     article: 'un',
     quantity: 3,
@@ -181,6 +193,7 @@ export const MOCK_PRIZES: Prize[] = [
   },
   {
     id: 'bicicleta-aro-20',
+    avimovilId: 4,
     name: 'Bicicleta Milano aro 20',
     article: 'una',
     quantity: 3,
@@ -190,6 +203,7 @@ export const MOCK_PRIZES: Prize[] = [
   },
   {
     id: 'mini-globo-loco',
+    avimovilId: 18,
     name: 'Mini Globo Loco Bestway',
     article: 'un',
     quantity: 6,
@@ -200,6 +214,7 @@ export const MOCK_PRIZES: Prize[] = [
   },
   {
     id: 'bicicleta-aro-16',
+    avimovilId: 3,
     name: 'Bicicleta Milano aro 16',
     article: 'una',
     quantity: 3,
@@ -210,6 +225,7 @@ export const MOCK_PRIZES: Prize[] = [
   },
   {
     id: 'smartfy-game-boy',
+    avimovilId: 9,
     name: 'Consola Smartfy Game Boy',
     article: 'una',
     quantity: 6,
@@ -220,6 +236,7 @@ export const MOCK_PRIZES: Prize[] = [
   },
   {
     id: 'rollers-ferrari',
+    avimovilId: 13,
     name: 'Rollers Ferrari',
     article: 'unos',
     quantity: 8,
@@ -230,6 +247,7 @@ export const MOCK_PRIZES: Prize[] = [
   },
   {
     id: 'auriculares-jbl-520bt',
+    avimovilId: 2,
     name: 'Auriculares JBL Tune 520BT',
     article: 'unos',
     quantity: 8,
@@ -240,6 +258,7 @@ export const MOCK_PRIZES: Prize[] = [
   },
   {
     id: 'skate-mediano',
+    avimovilId: 15,
     name: 'Skate mediano',
     article: 'un',
     quantity: 8,
@@ -252,6 +271,24 @@ export const MOCK_PRIZES: Prize[] = [
 
 /** Unidades planificadas para toda la campaña. Informativo: 89. */
 export const TOTAL_PRIZE_UNITS = MOCK_PRIZES.reduce((n, p) => n + (p.quantity ?? 0), 0);
+
+/** Índice por id de Avimovil (0–19) para resolver el premio ganado en O(1). */
+const PRIZE_BY_AVIMOVIL_ID = new Map<number, Prize>(
+  MOCK_PRIZES.filter((p) => p.avimovilId !== undefined).map((p) => [p.avimovilId as number, p]),
+);
+
+/**
+ * Premio del catálogo a partir del id de Avimovil que manda el backend
+ * (`premio-<id>-<nombre>`). Es la pieza que le pone imagen y copy al premio
+ * ganado: la respuesta del backend sólo trae id y nombre.
+ *
+ * Devuelve `undefined` si el id no está en el catálogo (p. ej. el premio de
+ * prueba, id 0). El que llama decide el fallback —normalmente, mostrar el
+ * nombre que vino del backend sin imagen— antes que inventar un premio.
+ */
+export function prizeByAvimovilId(avimovilId: number): Prize | undefined {
+  return PRIZE_BY_AVIMOVIL_ID.get(avimovilId);
+}
 
 /**
  * Premios que asoman del cofre en el hover del Home (sólo decorativo).

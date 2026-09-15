@@ -23,11 +23,18 @@ const SITE_KEY: string = import.meta.env.VITE_RECAPTCHA_SITE_KEY ?? '';
 /** Nombre de la acción que se reporta a Google, para separar métricas. */
 export type RecaptchaAction = 'redeem_code' | 'register';
 
+/**
+ * La clave es de reCAPTCHA en Google Cloud (Enterprise), no una clásica:
+ * cambia el script (`enterprise.js`) y el namespace (`grecaptcha.enterprise`),
+ * pero el token que se obtiene viaja igual que antes.
+ */
 declare global {
   interface Window {
     grecaptcha?: {
-      ready: (cb: () => void) => void;
-      execute: (siteKey: string, opts: { action: string }) => Promise<string>;
+      enterprise?: {
+        ready: (cb: () => void) => void;
+        execute: (siteKey: string, opts: { action: string }) => Promise<string>;
+      };
     };
   }
 }
@@ -42,7 +49,7 @@ function loadScript(): Promise<void> {
   if (scriptPromise) return scriptPromise;
   scriptPromise = new Promise<void>((resolve, reject) => {
     const el = document.createElement('script');
-    el.src = `https://www.google.com/recaptcha/api.js?render=${encodeURIComponent(SITE_KEY)}`;
+    el.src = `https://www.google.com/recaptcha/enterprise.js?render=${encodeURIComponent(SITE_KEY)}`;
     el.async = true;
     el.defer = true;
     el.onload = () => resolve();
@@ -66,7 +73,7 @@ export async function getRecaptchaToken(
   if (!isRecaptchaEnabled()) return undefined;
   try {
     await loadScript();
-    const grecaptcha = window.grecaptcha;
+    const grecaptcha = window.grecaptcha?.enterprise;
     if (!grecaptcha) return undefined;
     await new Promise<void>((resolve) => grecaptcha.ready(resolve));
     return await grecaptcha.execute(SITE_KEY, { action });
