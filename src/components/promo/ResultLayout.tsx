@@ -61,6 +61,11 @@ export interface ResultLayoutProps {
   scene: ReactNode;
   code?: string;
   codeCount: number;
+  /**
+   * Agrega el renglón del teléfono a la píldora. Sólo lo pide GANASTE: es la
+   * única pantalla con un premio que reclamar. Ver `TELEFONO`.
+   */
+  muestraTelefono?: boolean;
   /** Versión mobile de la escena. */
   mobileScene: ReactNode;
   /**
@@ -79,15 +84,19 @@ export interface ResultLayoutProps {
   pageTitle: string;
 }
 
-/* Texto pedido por la clienta el 14-09-2026 (captura de WhatsApp): reemplaza
-   «CANJEASTE EL CÓDIGO: … / GUARDÁ TUS STICKERS GANADORES PARA CANJEAR TU
-   PREMIO». Es el mismo para las cuatro pantallas de resultado. */
-const CONTACT_LINES = [
-  /* Un solo párrafo, como lo mandó: separado en dos, en desktop la píldora
-     daba seis renglones y se salía del lienzo por abajo. */
-  '¡SEGUÍ CARGANDO CÓDIGOS PARA PARTICIPAR POR MÁS PREMIOS INSTANTÁNEOS Y AUMENTAR TUS CHANCES DE GANAR EL VIAJE AL CARIBE! RECORDÁ GUARDAR TUS STICKERS.',
-  '¡COMUNICATE AL +595 984 324 335 PARA RETIRARLO!',
-];
+/* Texto de la píldora, pedido por la clienta en «Cuando un código no existe»
+   (PDF del 22-09-2026). Reemplaza a «CANJEASTE EL CÓDIGO: … / GUARDÁ TUS
+   STICKERS GANADORES PARA CANJEAR TU PREMIO».
+
+   Va en UN SOLO renglón lógico, como lo mandó el PDF: partido en dos párrafos
+   la píldora de escritorio daba seis renglones y se salía del lienzo. */
+const SEGUI_CARGANDO =
+  '¡SEGUÍ CARGANDO CÓDIGOS PARA PARTICIPAR POR MÁS PREMIOS INSTANTÁNEOS Y AUMENTAR TUS CHANCES DE GANAR EL VIAJE AL CARIBE! RECORDÁ GUARDAR TUS STICKERS.';
+
+/* El teléfono queda SÓLO en GANASTE. El PDF marca las otras tres pantallas
+   —perdiste, código utilizado, código inexistente— y en el reemplazo no lo
+   incluye: ahí no hay ningún premio que retirar, así que el número sobraba. */
+const TELEFONO = '¡COMUNICATE AL +595 984 324 335 PARA RETIRARLO!';
 
 /**
  * Estructura común de las cuatro pantallas de resultado
@@ -115,6 +124,7 @@ export function ResultLayout({
   scene,
   code,
   codeCount,
+  muestraTelefono = false,
   mobileScene,
   mobileVariante,
   mobileMensajeEjes,
@@ -161,9 +171,8 @@ export function ResultLayout({
           INGRESASTE EL CÓDIGO <strong>{code}</strong>.
         </p>
       )}
-      {CONTACT_LINES.map((line) => (
-        <p key={line}>{line}</p>
-      ))}
+      <p>{SEGUI_CARGANDO}</p>
+      {muestraTelefono && <p>{TELEFONO}</p>}
     </>
   );
 
@@ -318,15 +327,18 @@ export function ResultLayout({
               con su radio, y el texto adentro. Acá también, para que las dos se
               puedan medir.
 
-              DESVÍO INTENCIONAL — el 14-09-2026 la clienta cambió el texto de
-              la píldora por uno más largo («¡SEGUÍ CARGANDO CÓDIGOS…!», ver
-              `CONTACT_LINES`), así que ya no cabe en los 313x51 del nodo: el
-              texto ocupa todo el ancho útil de la píldora (+56w contra los 257
-              del nodo) y la píldora crece con `min-height` —+7h sin código en
-              la sesión, que es como mide `figma:check`; +19h en el flujo real,
-              con el renglón «INGRESASTE EL CÓDIGO …»—. El cofre y el contador
-              bajan esos mismos px. La x, la y y el ancho de la píldora siguen
-              siendo los del Figma. */}
+              DESVÍO INTENCIONAL — la clienta cambió el texto de la píldora
+              por uno más largo («¡SEGUÍ CARGANDO CÓDIGOS…!», ver
+              `SEGUI_CARGANDO`), así que el texto ya no cabe en los 257 de su
+              nodo: ocupa todo el ancho útil de la píldora y da -28x +56w, o
+              sea el mismo centro con la caja más ancha.
+
+              La SUPERFICIE, en cambio, volvió a los 313x51 del nodo cuando el
+              PDF del 22-09-2026 sacó el renglón del teléfono: medido con
+              `figma:check` en perdiste-mobile, `Rectangle 1` ya no aparece
+              entre los desvíos y el texto queda en +1.5h. GANASTE es la única
+              que conserva el teléfono (`muestraTelefono`) y por eso su píldora
+              sigue siendo un renglón más alta que las otras tres. */}
           <div
             className="result-m__note"
             data-figma="74:1041 74:991 105:270 131:342"

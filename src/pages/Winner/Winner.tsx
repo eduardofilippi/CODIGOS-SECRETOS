@@ -40,6 +40,9 @@ export default function Winner() {
       ctaY={711}
       code={lastResult?.code}
       codeCount={codeCount}
+      /* La única pantalla con premio que reclamar, y la única que el PDF del
+         22-09-2026 no marca: conserva el teléfono. */
+      muestraTelefono
       scene={<PrizeReveal prize={prize} />}
       mobileScene={<PrizeRevealMobile prize={prize} />}
       /* El mensaje nombra el premio, que sale del catálogo: el mockup dibuja

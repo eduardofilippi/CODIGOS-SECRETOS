@@ -319,9 +319,20 @@
     left: 7.711cqw;       /* 31 */
     top: 193.781cqw;      /* 779 */
     width: 86.318cqw;     /* 347 */
-    height: 20.398cqw;    /* 82 */
+    /* `min-height`, no `height`: el texto del PDF del 22-09-2026 no entra en
+       los 82 del nodo y la píldora crece hacia abajo. Queda holgura hasta el
+       pie del frame (779 + 82 = 861 contra 913 de alto).
+       El relleno son las sangrías del nodo —13 arriba y abajo, 19 a los
+       costados—, y con el texto EN FLUJO (ya no absoluto) son las que hacen
+       crecer la superficie: en absoluto el texto no empujaba nada y se salía
+       6 px por abajo. */
+    box-sizing: border-box;
+    min-height: 20.398cqw;    /* 82 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
     margin: 0;
-    padding: 0;
+    padding: 3.234cqw 4.726cqw;   /* 13 / 19 */
     border-radius: 49.751cqw;   /* 200 */
     background: var(--c-cyan-50);
     z-index: 4;
@@ -331,11 +342,12 @@
      adentro de la superficie. Los 52 son la TINTA de los tres renglones, no
      sus cajas de línea: tres de 18.7 dan 56.1. Se declara la caja del nodo y
      el interlineado desborda, igual que en Figma. */
+  /* En flujo dentro de la píldora: su alto es el que la hace crecer. La
+     posición del nodo (50, 792) la dan las sangrías de la superficie. */
   .codehelp-m__note-text {
-    position: absolute;
-    left: 4.726cqw;       /* 19 */
-    top: 3.234cqw;        /* 13 */
-    height: 12.935cqw;    /* 52 */
+    /* Mínimo por el mismo motivo que la superficie: el texto nuevo ocupa más
+       renglones que los tres del nodo. */
+    min-height: 12.935cqw;    /* 52 */
     width: 77.114cqw;     /* 310 */
     font-family: var(--font-display);
     font-size: 4.478cqw;  /* 18 */
