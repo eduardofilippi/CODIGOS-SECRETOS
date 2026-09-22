@@ -20,8 +20,14 @@
   flex-direction: column;
   align-items: center;
   pointer-events: auto;
-  /* 434 → 491 = 57px de aire superior en coordenadas de diseño */
-  padding: 2.969cqw 6.1cqw 0;
+  /* 434 → 491 = 57px de aire superior en coordenadas de diseño.
+     Abajo se reserva el filo enrollado: el papel termina al 91,1% del alto
+     (medido barriendo los píxeles de `ui/pergamino-2.webp`), o sea 54,8 de los
+     616 de la caja → 2.854cqw. Va en cqw y NO en %, porque un porcentaje de
+     padding se resuelve contra el ANCHO del bloque, no contra el alto: con
+     `8.9%` el aviso quedaba 27 px por encima del filo en vez de apoyado.
+     Esta reserva es la que lo mantiene sobre el papel. */
+  padding: 2.969cqw 6.1cqw 2.854cqw;
 }
 
 /* Titulares del nodo 70:403 y 70:402. Fill, cuerpo y sombras exactos del
@@ -97,7 +103,10 @@
 }
 
 .welcome__help {
-  margin-top: 0.68cqw;
+  /* 0.2 y no 0.68: el aviso de reCAPTCHA pasó a ir DEBAJO de este enlace, en
+     flujo, y en pantallas de menos de 1152 ocupa dos renglones. Los px que se
+     recortan acá son los que necesita para no pisarlo. */
+  margin-top: 0.2cqw;
   font-family: var(--font-display);
   color: var(--c-brown);
   text-decoration: underline;
@@ -118,30 +127,45 @@
   text-shadow: 0 0 0.8cqw rgba(252, 193, 2, 0.9);
 }
 
-/* AVISO DE reCAPTCHA — ANCLADO AL BORDE DEL PAPEL, NO AL FLUJO.
+/* AVISO DE reCAPTCHA — EN FLUJO, ÚLTIMO DEL PERGAMINO.
 
-   En flujo quedaba pegado al enlace de ayuda y su segunda línea caía sobre el
-   filo enrollado del pergamino. Medido sobre el propio asset
-   (`ui/pergamino-2.webp`, 1024x1024, barriendo los píxeles de papel): el papel
-   termina al 91,1% del alto y va del 6,0% al 94,3% del ancho. Sobre la caja de
-   918x616 eso da 810 px de papel útil y 55 px libres por debajo del aviso.
+   Estuvo anclado con `position: absolute; bottom: 9.5%` al filo del papel, y
+   así crecía HACIA ARRIBA: por debajo de 1440 el texto pasa a dos renglones y
+   se metía encima de «¿Dónde encuentro el código secreto?». Medido en el
+   navegador, el solape iba de 4 px a 1440 hasta 15 px a 900, o sea toda la
+   franja de portátiles.
 
-   Absoluto contra `.welcome__form`, que es `inset: 0` sobre el pergamino: al
-   colgar de `bottom` el bloque CRECE HACIA ARRIBA, hacia el papel vacío. Si en
-   una relación de aspecto angosta el texto pasa a dos líneas, se mete en el
-   pergamino en vez de desbordarlo, que es lo que pasaba antes. */
+   La causa no es el ancla sino el piso en px: todo lo demás escala en cqw y
+   encoge con el lienzo, pero el aviso se quedaba clavado en 12 px, así que a
+   1280 pesaba 1,5 veces lo que le toca en el diseño y ya no entraba.
+
+   Ahora va en flujo detrás del enlace —el orden natural de lectura, y el
+   navegador garantiza que no se pisen— y el piso baja a 10 px. La clienta
+   autorizó achicar la letra si hacía falta; es una nota legal, no texto de
+   lectura. El `padding-bottom` del formulario reserva el filo enrollado, así
+   que el bloque nunca se apoya sobre el rollo.
+
+   Verificado de 1920x1080 a 900x650 (el piso del rango desktop; por debajo
+   manda la composición mobile): ni un solo solape y el aviso siempre dentro
+   del papel. */
 .welcome__recaptcha-notice {
-  position: absolute;
-  left: 50%;
-  /* 9,5% de 616 = 58,5: el papel termina 54,8 px antes del borde de la caja,
-     así que quedan ~4 px de aire real contra el filo. */
-  bottom: 9.5%;
-  transform: translateX(-50%);
-  /* 42cqw = 806, apenas por dentro de los 810 de papel. A 1920 el texto entra
-     en UNA línea (624 px a 12 px), que es como se lee mejor. */
-  width: 42cqw;
+  /* 34cqw = 653. NO son los 810 de papel: en la FRANJA DE ABAJO, que es donde
+     cae el aviso, el papel plano llega sólo hasta los cilindros enrollados de
+     los extremos. Con 42cqw el renglón se montaba encima de esos cilindros en
+     cuanto el piso de 10 px lo ensanchaba en proporción (visible de 1280 a
+     1440). Acotado a la zona plana, el texto se parte en dos renglones antes
+     de llegar a ellos. */
+  width: 34cqw;
+  /* `auto` y no un número: con espacio de sobra —1920, donde el aviso entra en
+     un renglón— el margen se come el hueco y el bloque vuelve a apoyarse en el
+     filo del papel, que es donde lo dejaba el `bottom: 9.5%` original. Cuando
+     el espacio se acaba, el margen se anula y el aviso queda pegado al enlace,
+     nunca encima. El `padding-top` es el aire mínimo de ese caso. */
+  margin-top: auto;
+  padding-top: 0.15cqw;
   color: var(--c-brown-dark);
-  font-size: max(12px, 0.625cqw);
+  font-size: max(10px, 0.625cqw);
+  line-height: 1.1;
 }
 
 /* ---------- Mobile ---------- */
