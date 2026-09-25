@@ -56,6 +56,7 @@ export function useCodeFlow() {
    */
   const redeem = useCallback(
     async (cedula: string, code: string) => {
+      setLastResult(null);
       setLoading(true);
       setError(null);
       try {
@@ -111,6 +112,7 @@ export function useCodeFlow() {
 
   const submit = useCallback(
     async (cedula: string, code: string) => {
+      setLastResult(null);
       setLoading(true);
       setError(null);
       try {
@@ -134,7 +136,7 @@ export function useCodeFlow() {
       }
       await redeem(cedula, code);
     },
-    [navigate, redeem, setParticipant],
+    [navigate, redeem, setParticipant, setLastResult],
   );
 
   return { submit, redeem, loading, error };
