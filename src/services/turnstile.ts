@@ -3,17 +3,20 @@
  * -------------------------------------------------------------------------
  * Reemplaza a reCAPTCHA v3. Lo que cambia:
  *
- *   - El widget se renderiza UNA vez (ver `TurnstileHost`) y el desafío corre
- *     en segundo plano desde que carga la página. Casi nunca se ve; si
- *     Cloudflare necesita un click, aparece en la esquina del host.
- *   - El token es de UN SOLO USO y vive 5 minutos. Después de cada canje hay
- *     que llamar a `resetTurnstile()` para que arranque un desafío nuevo.
+ *   - El widget se renderiza UNA vez (lo hace `TurnstileHost`, en una esquina
+ *     fija) y el desafío corre en segundo plano desde que carga la página.
+ *     Casi nunca se ve; si Cloudflare necesita un click, aparece ahí.
+ *   - El token es de UN SOLO USO y vive 5 minutos. `getTurnstileToken` lo
+ *     CONSUME al entregarlo, y después de cada canje `useCodeFlow` llama a
+ *     `resetTurnstile()` para que arranque un desafío nuevo.
  *   - El backend (POST /api/v2/codes/redeem) es estricto: sin token responde
- *     403. Por eso `getTurnstileToken` ESPERA hasta 20 s en vez de mandar el
- *     canje sin token.
+ *     403. Por eso `getTurnstileToken` ESPERA hasta 20 s en vez de entregar
+ *     nada, salvo que ya se sepa que no va a llegar (api.js no cargó, sitekey
+ *     u hostname inválidos): ahí devuelve `undefined` enseguida.
  *
  * Mientras `VITE_TURNSTILE_SITE_KEY` esté vacía no se carga nada de Cloudflare
- * y el canje viaja sin token: la demo con el adapter mock sigue igual.
+ * y `useCodeFlow` manda el canje sin token: la demo con el adapter mock sigue
+ * igual.
  *
  * Reparto de responsabilidades:
  *   Frontend  obtiene el token y lo manda junto al código.
@@ -32,6 +35,14 @@ const TOKEN_WAIT_MS = 20_000;
 /** Cuánto se espera a que cargue api.js antes de darlo por perdido. */
 const SCRIPT_WAIT_MS = 60_000;
 
+/**
+ * Prefijos de los códigos de error de Turnstile que no se arreglan esperando:
+ * 1101xx sitekey inválida, 110200 hostname no permitido para la sitekey,
+ * 11042x/11043x action o cData inválidos, 1105xx navegador no soportado.
+ * https://developers.cloudflare.com/turnstile/troubleshooting/client-side-errors/
+ */
+const FATAL_ERROR_PREFIXES = ['1101', '110200', '11042', '11043', '1105'];
+
 export interface TurnstileHooks {
   /** Cloudflare va a mostrar el checkbox: el host se hace visible. */
   onInteractiveStart?: () => void;
@@ -44,9 +55,17 @@ export function isTurnstileEnabled(): boolean {
 
 // ---- Estado del módulo: un solo widget por página ----
 let widgetId: string | null = null;
+/** Token vigente todavía no entregado. Se vacía al entregarlo (un solo uso). */
 let token = '';
+/** Canjes esperando token, en orden de llegada: el próximo token va al primero. */
 let waiters: Array<(value: string | undefined) => void> = [];
 let scriptPromise: Promise<void> | null = null;
+/** api.js no cargó: se reintenta en el próximo canje en vez de esperar 20 s. */
+let loadFailed = false;
+/** Error de configuración (sitekey, hostname, navegador): no va a llegar ningún token. */
+let fatal = false;
+/** Último montaje, para poder reintentar la carga desde `getTurnstileToken`. */
+let lastMount: { container: HTMLElement; hooks: TurnstileHooks } | null = null;
 
 function resolveWaiters(value: string | undefined): void {
   const pending = waiters;
@@ -54,7 +73,20 @@ function resolveWaiters(value: string | undefined): void {
   for (const resolve of pending) resolve(value);
 }
 
-/** Inyecta api.js una sola vez y resuelve cuando `window.turnstile` existe. */
+/** Llama a la API de Turnstile sin dejar que una excepción suya rompa al que llama. */
+function safely(label: string, fn: () => void): void {
+  try {
+    fn();
+  } catch (error) {
+    console.warn(`[turnstile] ${label}:`, error instanceof Error ? error.message : error);
+  }
+}
+
+/**
+ * Inyecta api.js una sola vez y resuelve cuando `window.turnstile` existe.
+ * No usa `turnstile.ready()`: con un script insertado dinámicamente alcanza
+ * con `onload`, y Turnstile se queja si `ready()` se usa con scripts async.
+ */
 function loadScript(): Promise<void> {
   if (scriptPromise) return scriptPromise;
   scriptPromise = new Promise<void>((resolve, reject) => {
@@ -66,19 +98,32 @@ function loadScript(): Promise<void> {
       () => reject(new Error('Turnstile no cargó a tiempo')),
       SCRIPT_WAIT_MS,
     );
-    const el = document.createElement('script');
-    el.src = SCRIPT_URL;
-    el.async = true;
-    el.defer = true;
-    el.onload = () => {
+    const onLoad = () => {
       window.clearTimeout(timer);
       if (window.turnstile) resolve();
       else reject(new Error('api.js cargó pero window.turnstile no existe'));
     };
-    el.onerror = () => {
+    const onError = () => {
       window.clearTimeout(timer);
       reject(new Error('No se pudo cargar Turnstile'));
     };
+
+    // Si ya hay un api.js en la página (otro montaje, HMR), se espera a ése en
+    // vez de inyectar un segundo: Turnstile avisa si se carga dos veces.
+    const existing = document.querySelector<HTMLScriptElement>(
+      'script[src^="https://challenges.cloudflare.com/turnstile/v0/api.js"]',
+    );
+    if (existing) {
+      existing.addEventListener('load', onLoad, { once: true });
+      existing.addEventListener('error', onError, { once: true });
+      return;
+    }
+
+    const el = document.createElement('script');
+    el.src = SCRIPT_URL;
+    el.async = true;
+    el.onload = onLoad;
+    el.onerror = onError;
     document.head.appendChild(el);
   });
   return scriptPromise;
@@ -87,15 +132,16 @@ function loadScript(): Promise<void> {
 /**
  * Renderiza el widget UNA vez dentro de `container`. Idempotente: con un widget
  * ya montado no hace nada. Nunca lanza: si Cloudflare no carga queda en la
- * consola y `getTurnstileToken` devuelve `undefined` al vencer la espera.
+ * consola, `loadFailed` se prende y el próximo canje reintenta la carga.
  */
 export function mountTurnstile(container: HTMLElement, hooks: TurnstileHooks = {}): void {
   if (!isTurnstileEnabled() || widgetId !== null) return;
+  lastMount = { container, hooks };
 
   void loadScript()
     .then(() => {
-      // Pudo montarse dos veces mientras cargaba el script (StrictMode), o
-      // desmontarse: sólo renderiza el primero y sólo si el nodo sigue vivo.
+      // Pudo montarse dos veces mientras cargaba el script (StrictMode) o
+      // desmontarse: renderiza el primer `.then` que llegue con el nodo vivo.
       if (widgetId !== null || !container.isConnected) return;
       const turnstile = window.turnstile;
       if (!turnstile) return;
@@ -109,8 +155,11 @@ export function mountTurnstile(container: HTMLElement, hooks: TurnstileHooks = {
         language: 'es',
         theme: 'dark',
         callback: (value: string) => {
-          token = value;
-          resolveWaiters(value);
+          // Un solo uso: va al canje que esperaba primero; si nadie espera,
+          // queda guardado para el próximo.
+          const next = waiters.shift();
+          if (next) next(value);
+          else token = value;
         },
         'expired-callback': () => {
           // Turnstile lo renueva solo; el próximo `callback` trae el nuevo.
@@ -121,7 +170,20 @@ export function mountTurnstile(container: HTMLElement, hooks: TurnstileHooks = {
         },
         'error-callback': (code: string) => {
           token = '';
-          console.warn('[turnstile] error', code);
+          const text = code ? String(code) : '';
+          if (FATAL_ERROR_PREFIXES.some((p) => text.startsWith(p))) {
+            fatal = true;
+            console.error(
+              `[turnstile] error ${text}: no va a llegar ningún token.` +
+                (text.startsWith('110200')
+                  ? ' Falta este hostname en la lista del widget (panel de Cloudflare).'
+                  : ''),
+            );
+            resolveWaiters(undefined);
+            return;
+          }
+          // Errores transitorios: Turnstile reintenta solo (`retry: 'auto'`).
+          console.warn('[turnstile] error', text);
         },
         'before-interactive-callback': () => hooks.onInteractiveStart?.(),
         'after-interactive-callback': () => hooks.onInteractiveEnd?.(),
@@ -132,28 +194,66 @@ export function mountTurnstile(container: HTMLElement, hooks: TurnstileHooks = {
         return;
       }
       widgetId = id;
+      loadFailed = false;
     })
     .catch((error: unknown) => {
+      // Se descarta la promesa fallida para poder reintentar la carga después.
+      scriptPromise = null;
+      loadFailed = true;
       console.error('[turnstile]', error instanceof Error ? error.message : error);
+      resolveWaiters(undefined);
     });
 }
 
 /** Quita el widget y descarta el token y las esperas pendientes. */
 export function unmountTurnstile(): void {
-  if (widgetId !== null) window.turnstile?.remove(widgetId);
+  if (widgetId !== null) {
+    const id = widgetId;
+    safely('remove', () => window.turnstile?.remove(id));
+  }
   widgetId = null;
   token = '';
+  lastMount = null;
   resolveWaiters(undefined);
 }
 
 /**
- * Token vigente, o espera hasta TOKEN_WAIT_MS a que el desafío en segundo plano
- * lo entregue. `undefined` si Turnstile está apagado o si no llegó a tiempo.
+ * Entrega el token vigente (y lo consume), o espera hasta TOKEN_WAIT_MS a que
+ * el desafío en segundo plano lo produzca. `undefined` si Turnstile está
+ * apagado, si no llegó a tiempo, o enseguida si ya se sabe que no va a llegar.
  * Nunca lanza.
  */
 export function getTurnstileToken(): Promise<string | undefined> {
   if (!isTurnstileEnabled()) return Promise.resolve(undefined);
-  if (token) return Promise.resolve(token);
+
+  // Red de seguridad: en una pestaña en segundo plano el `callback` puede
+  // haberse perdido; Turnstile igual guarda la respuesta del widget.
+  if (!token && widgetId !== null) {
+    const id = widgetId;
+    safely('getResponse', () => {
+      const live = window.turnstile?.getResponse(id);
+      if (live && !window.turnstile?.isExpired(id)) token = live;
+    });
+  }
+
+  if (token) {
+    const handed = token;
+    token = '';
+    return Promise.resolve(handed);
+  }
+
+  if (fatal) return Promise.resolve(undefined);
+
+  if (loadFailed) {
+    // Sin api.js no hay nada que esperar: se responde ya y se reintenta la
+    // carga para el próximo intento (si el script apareció tarde, `loadScript`
+    // resuelve al instante y el widget queda montado).
+    loadFailed = false;
+    if (lastMount && lastMount.container.isConnected) {
+      mountTurnstile(lastMount.container, lastMount.hooks);
+    }
+    return Promise.resolve(undefined);
+  }
 
   return new Promise<string | undefined>((resolve) => {
     let timer = 0;
@@ -169,8 +269,14 @@ export function getTurnstileToken(): Promise<string | undefined> {
   });
 }
 
-/** Borra el token y arranca un desafío nuevo: los tokens son de un solo uso. */
+/**
+ * Borra el token y arranca un desafío nuevo: los tokens son de un solo uso.
+ * Un canje que siga esperando recibe el token del desafío nuevo.
+ */
 export function resetTurnstile(): void {
   token = '';
-  if (widgetId !== null) window.turnstile?.reset(widgetId);
+  if (widgetId !== null) {
+    const id = widgetId;
+    safely('reset', () => window.turnstile?.reset(id));
+  }
 }
