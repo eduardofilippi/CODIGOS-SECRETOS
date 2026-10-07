@@ -95,8 +95,8 @@ Comportamiento:
 - **Callbacks.** `callback(token)` guarda el token y resuelve a todos los que esperan.
   `expired-callback` borra el token (Turnstile lo renueva solo; el próximo `callback`
   trae el nuevo). `timeout-callback` llama a `resetTurnstile()`. `error-callback`
-  guarda el código y borra el token; el `retry: 'auto'` por defecto de Turnstile se
-  encarga de reintentar. Los `before/after-interactive-callback` llaman a los hooks
+  loguea el código en consola y borra el token; el `retry: 'auto'` por defecto de
+  Turnstile se encarga de reintentar. Los `before/after-interactive-callback` llaman a los hooks
   del host.
 - **`getTurnstileToken`.** Apagado → `undefined`. Token guardado → se devuelve ya.
   Si no, se encola una espera con `setTimeout(TOKEN_WAIT_MS)` que resuelve `undefined`.
