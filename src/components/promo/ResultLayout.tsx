@@ -60,9 +60,12 @@ export interface ResultLayoutProps {
   /** Escena de la derecha: cofre + premio, en coordenadas de diseño. */
   scene: ReactNode;
   code?: string;
-  /** true → "CANJEASTE EL CÓDIGO"; false → "CÓDIGO INGRESADO" (no se consumió). */
-  codeRedeemed?: boolean;
   codeCount: number;
+  /**
+   * Agrega el renglón del teléfono a la píldora. Sólo lo pide GANASTE: es la
+   * única pantalla con un premio que reclamar. Ver `TELEFONO`.
+   */
+  muestraTelefono?: boolean;
   /** Versión mobile de la escena. */
   mobileScene: ReactNode;
   /**
@@ -81,10 +84,19 @@ export interface ResultLayoutProps {
   pageTitle: string;
 }
 
-const CONTACT_LINES = [
-  '*GUARDÁ TUS STICKERS GANADORES PARA CANJEAR TU PREMIO*',
-  '¡COMUNICATE AL +595 984 324 335 PARA RETIRARLO!',
-];
+/* Texto de la píldora, pedido por la clienta en «Cuando un código no existe»
+   (PDF del 22-09-2026). Reemplaza a «CANJEASTE EL CÓDIGO: … / GUARDÁ TUS
+   STICKERS GANADORES PARA CANJEAR TU PREMIO».
+
+   Va en UN SOLO renglón lógico, como lo mandó el PDF: partido en dos párrafos
+   la píldora de escritorio daba seis renglones y se salía del lienzo. */
+const SEGUI_CARGANDO =
+  '¡SEGUÍ CARGANDO CÓDIGOS PARA PARTICIPAR POR MÁS PREMIOS INSTANTÁNEOS Y AUMENTAR TUS CHANCES DE GANAR EL VIAJE AL CARIBE! RECORDÁ GUARDAR TUS STICKERS.';
+
+/* El teléfono queda SÓLO en GANASTE. El PDF marca las otras tres pantallas
+   —perdiste, código utilizado, código inexistente— y en el reemplazo no lo
+   incluye: ahí no hay ningún premio que retirar, así que el número sobraba. */
+const TELEFONO = '¡COMUNICATE AL +595 984 324 335 PARA RETIRARLO!';
 
 /**
  * Estructura común de las cuatro pantallas de resultado
@@ -111,8 +123,8 @@ export function ResultLayout({
   ctaY = 711,
   scene,
   code,
-  codeRedeemed = true,
   codeCount,
+  muestraTelefono = false,
   mobileScene,
   mobileVariante,
   mobileMensajeEjes,
@@ -152,18 +164,15 @@ export function ResultLayout({
     return () => window.removeEventListener('resize', fit);
   }, [desktopMessageSingleLine, desktopMessageText, messageSize, messageWidth]);
 
-  const codeLabel = codeRedeemed ? 'CANJEASTE EL CÓDIGO' : 'CÓDIGO INGRESADO';
-
   const note = (
     <>
       {code && (
         <p className="result__note-code">
-          {codeLabel}: <strong>{code}</strong>
+          INGRESASTE EL CÓDIGO <strong>{code}</strong>.
         </p>
       )}
-      {CONTACT_LINES.map((line) => (
-        <p key={line}>{line}</p>
-      ))}
+      <p>{SEGUI_CARGANDO}</p>
+      {muestraTelefono && <p>{TELEFONO}</p>}
     </>
   );
 
@@ -318,20 +327,18 @@ export function ResultLayout({
               con su radio, y el texto adentro. Acá también, para que las dos se
               puedan medir.
 
-              DESVÍO CONOCIDO — el texto da Δh -11 contra el nodo, y no es de
-              CSS: el mockup dibuja TRES renglones porque incluye la línea
-              «CANJEASTE EL CÓDIGO: …», y esa línea sólo existe cuando hay un
-              código en la sesión. Abriendo la ruta directamente —que es como
-              mide `figma:check`— no lo hay y quedan dos: los 11 px que faltan
-              son ese renglón.
+              DESVÍO INTENCIONAL — la clienta cambió el texto de la píldora
+              por uno más largo («¡SEGUÍ CARGANDO CÓDIGOS…!», ver
+              `SEGUI_CARGANDO`), así que el texto ya no cabe en los 257 de su
+              nodo: ocupa todo el ancho útil de la píldora y da -28x +56w, o
+              sea el mismo centro con la caja más ancha.
 
-              Medido recorriendo el flujo de verdad (participar → registro →
-              ganaste, con el código del mockup): la caja da 252.1x37.5 contra
-              los 257x36 del nodo, o sea Δh +1.5. Lo que queda es que el nodo es
-              4.9 px más ancho que su propia tinta, y como el texto va centrado
-              eso corre la x la mitad: 2.4. El centro coincide, 205.45 contra
-              205.5. La condición que lo cierra: si con un código en la sesión
-              el alto se aparta de 37.5, ahí sí hay CSS que mirar. */}
+              La SUPERFICIE, en cambio, volvió a los 313x51 del nodo cuando el
+              PDF del 22-09-2026 sacó el renglón del teléfono: medido con
+              `figma:check` en perdiste-mobile, `Rectangle 1` ya no aparece
+              entre los desvíos y el texto queda en +1.5h. GANASTE es la única
+              que conserva el teléfono (`muestraTelefono`) y por eso su píldora
+              sigue siendo un renglón más alta que las otras tres. */}
           <div
             className="result-m__note"
             data-figma="74:1041 74:991 105:270 131:342"
@@ -455,7 +462,12 @@ export function ResultLayout({
       </PromoButton>
 
       {/* --- Pie: aviso de stickers y contador --- */}
-      <div className="result__note abs" style={{ ...box({ x: 150, y: 896, w: 630, h: 97 }), zIndex: 7 }}>
+      {/* Alto mínimo y no fijo: con el texto nuevo (14-09-2026) son cinco
+          renglones y la píldora crece hacia abajo desde la y del nodo. */}
+      <div
+        className="result__note abs"
+        style={{ ...box({ x: 150, y: 896, w: 630, h: 97 }), height: 'auto', minHeight: u(97), zIndex: 7 }}
+      >
         {note}
       </div>
       </div>

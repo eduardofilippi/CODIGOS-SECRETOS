@@ -192,7 +192,12 @@
   line-height: 1.04;
   color: #fff;
   text-align: center;
-  white-space: nowrap;
+  /* Se parte en renglones: desde el 14-09-2026 la píldora lleva la frase
+     «¡SEGUÍ CARGANDO CÓDIGOS…!», que a 25 px no entra en los 630 del nodo. El
+     alto del nodo (97) pasa a ser un mínimo en `ResultLayout` y la píldora
+     crece hacia abajo, con la y del Figma como techo. */
+  white-space: normal;
+  box-sizing: border-box;
 }
 
 .result__note p {

@@ -1,9 +1,10 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 import type { Participant, PromoCodeResult, SessionState } from '../types/promo';
+import { readLastResult, storeLastResult } from './resultStorage';
 
 /**
- * Estado de sesión SÓLO de UI (para poder navegar la demo).
- * No persiste datos personales: vive en memoria y se pierde al recargar.
+ * Estado de UI. El último resultado se conserva en esta pestaña al recargar.
+ * El caché no adjudica premios ni vuelve a enviar el código al backend.
  */
 interface SessionContextValue extends SessionState {
   setParticipant: (p: Participant | null) => void;
@@ -17,16 +18,18 @@ const SessionContext = createContext<SessionContextValue | null>(null);
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [participant, setParticipant] = useState<Participant | null>(null);
-  const [codeCount, setCodeCount] = useState(0);
-  const [lastResult, setLastResultState] = useState<PromoCodeResult | null>(null);
+  const [lastResult, setLastResultState] = useState<PromoCodeResult | null>(readLastResult);
+  const [codeCount, setCodeCount] = useState(() => lastResult?.codeCount ?? 0);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const setLastResult = useCallback((r: PromoCodeResult | null) => {
+    storeLastResult(r);
     setLastResultState(r);
     if (r) setCodeCount(r.codeCount);
   }, []);
 
   const reset = useCallback(() => {
+    storeLastResult(null);
     setParticipant(null);
     setCodeCount(0);
     setLastResultState(null);

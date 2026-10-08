@@ -26,7 +26,6 @@ export default function CodeNotFound() {
       messageY={616}
       ctaY={730}
       code={lastResult?.code}
-      codeRedeemed={false}
       codeCount={codeCount}
       scene={
         <TreasureChest

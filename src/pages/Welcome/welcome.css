@@ -20,8 +20,14 @@
   flex-direction: column;
   align-items: center;
   pointer-events: auto;
-  /* 434 → 491 = 57px de aire superior en coordenadas de diseño */
-  padding: 2.969cqw 6.1cqw 0;
+  /* 434 → 491 = 57px de aire superior en coordenadas de diseño.
+     Abajo se reserva el filo enrollado: el papel termina al 91,1% del alto
+     (medido barriendo los píxeles de `ui/pergamino-2.webp`), o sea 54,8 de los
+     616 de la caja → 2.854cqw. Va en cqw y NO en %, porque un porcentaje de
+     padding se resuelve contra el ANCHO del bloque, no contra el alto: con
+     `8.9%` el aviso quedaba 27 px por encima del filo en vez de apoyado.
+     Esta reserva es la que lo mantiene sobre el papel. */
+  padding: 2.969cqw 6.1cqw 2.854cqw;
 }
 
 /* Titulares del nodo 70:403 y 70:402. Fill, cuerpo y sombras exactos del

@@ -76,6 +76,7 @@ export function useCodeFlow() {
       // Si el canje terminó en una pantalla de resultado, no se resetea el
       // widget acá (ver el `finally`).
       let navigatedToResult = false;
+      setLastResult(null);
       setLoading(true);
       setError(null);
       try {
@@ -147,6 +148,7 @@ export function useCodeFlow() {
 
   const submit = useCallback(
     async (cedula: string, code: string) => {
+      setLastResult(null);
       setLoading(true);
       setError(null);
       try {
@@ -170,7 +172,7 @@ export function useCodeFlow() {
       }
       await redeem(cedula, code);
     },
-    [navigate, redeem, setParticipant],
+    [navigate, redeem, setParticipant, setLastResult],
   );
 
   return { submit, redeem, loading, error };

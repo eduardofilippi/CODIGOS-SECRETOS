@@ -23,7 +23,6 @@ export default function Loser() {
       messageY={616}
       ctaY={730}
       code={lastResult?.code}
-      codeRedeemed
       codeCount={codeCount}
       scene={
         <TreasureChest

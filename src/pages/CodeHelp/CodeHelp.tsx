@@ -22,9 +22,13 @@ import fondoCodigoDesktop from '../../assets/backgrounds/fondo-codehelp-desktop.
 const PACK_ALT =
   'Pack de jugos PuroSol con el sticker promocional. El código secreto está impreso en el sticker, en el frente del envase.';
 
+/* Texto pedido por la clienta en «En el apartado Buscá el código secreto»
+   (PDF del 22-09-2026): reemplaza a «GUARDÁ TUS STICKERS GANADORES PARA
+   CANJEAR TU PREMIO / ¡COMUNICATE AL …!». Acá no hay código ingresado ni
+   premio que retirar, así que va sin el «Ingresaste el código XXX» que sí
+   lleva la píldora de las pantallas de resultado, y sin el teléfono. */
 const CONTACT = [
-  '*GUARDÁ TUS STICKERS GANADORES PARA CANJEAR TU PREMIO*',
-  '¡COMUNICATE AL +595 984 324 335 PARA RETIRARLO!',
+  '¡SEGUÍ CARGANDO CÓDIGOS PARA PARTICIPAR POR MÁS PREMIOS INSTANTÁNEOS Y AUMENTAR TUS CHANCES DE GANAR EL VIAJE AL CARIBE! RECORDÁ GUARDAR TUS STICKERS.',
 ];
 
 /** DÓNDE ESTÁ EL CÓDIGO — Figma 19:2982. */
@@ -194,7 +198,13 @@ export default function CodeHelp() {
         style={{ ...box({ x: 1200, y: 157, w: 467, h: 765 }), zIndex: 6 }}
       />
 
-      <div className="codehelp__note codehelp__right-anchor abs" style={{ ...box({ x: 1095, y: 935, w: 640, h: 82 }), zIndex: 7 }} id="contenido">
+      {/* Alto mínimo y no fijo: el texto del PDF del 22-09-2026 es más largo
+          que el del nodo y la píldora crece hacia abajo desde su y de Figma. */}
+      <div
+        className="codehelp__note codehelp__right-anchor abs"
+        style={{ ...box({ x: 1095, y: 935, w: 640, h: 82 }), height: 'auto', minHeight: u(82), zIndex: 7 }}
+        id="contenido"
+      >
         {note}
       </div>
 

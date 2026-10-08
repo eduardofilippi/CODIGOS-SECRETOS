@@ -2,8 +2,7 @@ import { ResultLayout } from '../../components/promo/ResultLayout';
 import { PrizeReveal } from '../../components/promo/PrizeReveal';
 import { PrizeRevealMobile } from '../../components/promo/PrizeRevealMobile';
 import { useSession } from '../../app/SessionContext';
-import { MOCK_PRIZES } from '../../mocks/prizes';
-import type { Prize } from '../../types/promo';
+import { Navigate } from 'react-router-dom';
 
 /**
  * GANASTE — Figma 23:3081 (desktop) y "ganaste.png" (mobile).
@@ -12,14 +11,11 @@ import type { Prize } from '../../types/promo';
 export default function Winner() {
   const { lastResult, codeCount } = useSession();
 
-  /* Dos situaciones distintas, y se resuelven distinto:
-     - Sin resultado en sesión: nadie jugó, entraron directo a la URL (así la
-       enlaza el recorrido del demo). Se muestra un premio del catálogo como
-       muestra de la pantalla.
-     - Con resultado pero sin `prize`: el backend devolvió WIN incompleto. Ahí
-       NO se inventa un premio —mostrar el equivocado es peor que no mostrar
-       ninguno—: se felicita sin nombrarlo y el panel ya trae el teléfono. */
-  const prize: Prize | undefined = lastResult ? lastResult.prize : MOCK_PRIZES[0];
+  // Una URL de resultado nunca constituye una adjudicación de premio.
+  if (lastResult?.status !== 'WIN') {
+    return <Navigate to="/participar" replace />;
+  }
+  const prize = lastResult.prize;
   const message = prize
     ? `te ganaste ${prize.article ?? 'un'} ${prize.name}!`
     : 'te ganaste un premio!';
@@ -39,8 +35,10 @@ export default function Winner() {
       messageY={616}
       ctaY={711}
       code={lastResult?.code}
-      codeRedeemed
       codeCount={codeCount}
+      /* La única pantalla con premio que reclamar, y la única que el PDF del
+         22-09-2026 no marca: conserva el teléfono. */
+      muestraTelefono
       scene={<PrizeReveal prize={prize} />}
       mobileScene={<PrizeRevealMobile prize={prize} />}
       /* El mensaje nombra el premio, que sale del catálogo: el mockup dibuja
