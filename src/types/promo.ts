@@ -28,14 +28,14 @@ export interface PromoCode {
   cedula: Cedula;
   code: string;
   /**
-   * Token de reCAPTCHA v3 generado en el momento del envío.
+   * Token de Cloudflare Turnstile obtenido antes del envío.
    *
-   * Va vacío mientras no haya claves cargadas (`VITE_RECAPTCHA_SITE_KEY`). El
-   * backend lo verifica contra Google ANTES de mirar el código: si el token no
-   * es válido o el score es bajo, rechaza la operación y no consume el código.
-   * Es de un solo uso y caduca a los dos minutos.
+   * Va vacío mientras no haya sitekey cargada (`VITE_TURNSTILE_SITE_KEY`). El
+   * backend lo verifica contra Cloudflare ANTES de mirar el código y, si falta
+   * o no es válido, rechaza con 403 sin consumir el código. Es de un solo uso
+   * y vive 5 minutos: después de cada canje el widget se resetea.
    */
-  recaptchaToken?: string;
+  turnstileToken?: string;
 }
 
 export interface Prize {

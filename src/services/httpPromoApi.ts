@@ -19,6 +19,21 @@ import {
 } from './participantStorage';
 
 /**
+ * El backend rechazó la verificación anti-bot (403): el token faltó, venció o
+ * ya se usó. `useCodeFlow` lo distingue para mostrar el mensaje de seguridad
+ * en vez del genérico.
+ */
+export class BotCheckRejectedError extends Error {
+  constructor(path: string) {
+    super(`API ${path} rechazó la verificación de seguridad (403)`);
+    this.name = 'BotCheckRejectedError';
+  }
+}
+
+/** Canje con token de Turnstile. La V1 (`/api/codes/redeem`) usaba reCAPTCHA. */
+const REDEEM_PATH = '/api/v2/codes/redeem';
+
+/**
  * Adapter real: habla con codigos-secretos-backend.
  * ---------------------------------------------------------------------------
  * El backend no tiene base de datos propia: reenvía cada canje a Avimovil con
@@ -31,7 +46,7 @@ import {
  *                       navegador? Si lo hay, la carga de código saltea REGISTRO.
  *   registerParticipant localStorage (no existe endpoint de registro; la regla
  *                       de edad mínima se valida acá, igual que en el mock)
- *   submitPromoCode     POST /api/codes/redeem con los datos guardados
+ *   submitPromoCode     POST /api/v2/codes/redeem con los datos guardados
  *   getCodeCount        último contador conocido (viaja en cada respuesta)
  *   getPrizes/getTerms  catálogo estático del bundle, igual que el mock
  */
@@ -51,9 +66,11 @@ export class HttpPromoApi implements PromoApi {
       body: JSON.stringify(body),
     });
 
+    if (response.status === 403) {
+      // Verificación anti-bot rechazada: mensaje propio en useCodeFlow.
+      throw new BotCheckRejectedError(path);
+    }
     if (!response.ok) {
-      // 403 = reCAPTCHA rechazado; el resto, errores del servidor. En ambos
-      // casos se lanza: useCodeFlow ya muestra el mensaje de error genérico.
       throw new Error(`API ${path} respondió ${response.status}`);
     }
     return (await response.json()) as T;
@@ -83,7 +100,7 @@ export class HttpPromoApi implements PromoApi {
     return { ok: true, participant: toParticipant(form) };
   }
 
-  async submitPromoCode({ cedula, code, recaptchaToken }: PromoCode): Promise<PromoCodeResult> {
+  async submitPromoCode({ cedula, code, turnstileToken }: PromoCode): Promise<PromoCodeResult> {
     const stored = readStoredParticipant(cedula);
     if (!stored) {
       // Sin datos no hay canje: Avimovil los necesita en cada envío.
@@ -93,10 +110,10 @@ export class HttpPromoApi implements PromoApi {
     // Los datos que viajan son los guardados en el registro, no los de la
     // pantalla: la carga de código sólo pide cédula y código.
     const { form } = stored;
-    const result = await this.post<PromoCodeResult>('/api/codes/redeem', {
+    const result = await this.post<PromoCodeResult>(REDEEM_PATH, {
       cedula: form.cedula,
       code,
-      recaptchaToken,
+      turnstileToken,
       nombre: form.fullName,
       telefono: form.phone,
       email: form.email,
