@@ -181,7 +181,8 @@ try {
 } catch (e) {
   setError(e instanceof BotCheckRejectedError ? TURNSTILE_MESSAGE : NAVE_NODRIZA_MESSAGE);
 } finally {
-  resetTurnstile();                // el token es de un solo uso, salga como salga
+  if (!navigatedToResult) resetTurnstile(); // un solo uso: reset sólo si se queda en la pantalla;
+                                            // tras un resultado, lo pide el próximo getTurnstileToken
   setLoading(false);
 }
 ```

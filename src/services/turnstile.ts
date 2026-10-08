@@ -7,8 +7,10 @@
  *     fija) y el desafío corre en segundo plano desde que carga la página.
  *     Casi nunca se ve; si Cloudflare necesita un click, aparece ahí.
  *   - El token es de UN SOLO USO y vive 5 minutos. `getTurnstileToken` lo
- *     CONSUME al entregarlo, y después de cada canje `useCodeFlow` llama a
- *     `resetTurnstile()` para que arranque un desafío nuevo.
+ *     CONSUME al entregarlo. Si la persona se queda en la pantalla (error,
+ *     registro pendiente) `useCodeFlow` llama a `resetTurnstile()` enseguida
+ *     para tener token listo al reintentar; si se fue a un resultado, el
+ *     desafío nuevo se pide recién en el próximo `getTurnstileToken`.
  *   - El backend (POST /api/v2/codes/redeem) es estricto: sin token responde
  *     403. Por eso `getTurnstileToken` ESPERA hasta 20 s en vez de entregar
  *     nada, salvo que ya se sepa que no va a llegar (api.js no cargó, sitekey
@@ -188,6 +190,9 @@ export function mountTurnstile(container: HTMLElement, hooks: TurnstileHooks = {
           token = '';
         },
         'timeout-callback': () => {
+          // Si el desafío interactivo venció sin click, el host vuelve a
+          // esconderse: Turnstile no siempre dispara after-interactive acá.
+          hooks.onInteractiveEnd?.();
           resetTurnstile();
         },
         'error-callback': (code: string) => {
@@ -201,6 +206,7 @@ export function mountTurnstile(container: HTMLElement, hooks: TurnstileHooks = {
                   ? ' Falta este hostname en la lista del widget (panel de Cloudflare).'
                   : ''),
             );
+            hooks.onInteractiveEnd?.();
             resolveWaiters(undefined);
             return;
           }
@@ -277,6 +283,12 @@ export function getTurnstileToken(): Promise<string | undefined> {
     return Promise.resolve(undefined);
   }
 
+  // Después de un canje exitoso el widget sigue sosteniendo el token ya usado
+  // y no va a producir otro por sí solo. El desafío nuevo se pide recién acá,
+  // y no en la pantalla de resultado, para que el checkbox nunca aparezca
+  // donde no hay nada que enviar.
+  if (handedOut && widgetId !== null) resetTurnstile();
+
   return new Promise<string | undefined>((resolve) => {
     let timer = 0;
     const settle = (value: string | undefined) => {
@@ -297,6 +309,9 @@ export function getTurnstileToken(): Promise<string | undefined> {
  */
 export function resetTurnstile(): void {
   token = '';
+  // Tras el reset el widget ya no devuelve el token viejo: la red de seguridad
+  // de `getTurnstileToken` puede volver a confiar en `getResponse`.
+  handedOut = '';
   if (widgetId !== null) {
     const id = widgetId;
     safely('reset', () => window.turnstile?.reset(id));

@@ -73,6 +73,9 @@ export function useCodeFlow() {
     async (cedula: string, code: string) => {
       if (inFlight.current) return;
       inFlight.current = true;
+      // Si el canje terminó en una pantalla de resultado, no se resetea el
+      // widget acá (ver el `finally`).
+      let navigatedToResult = false;
       setLoading(true);
       setError(null);
       try {
@@ -123,13 +126,18 @@ export function useCodeFlow() {
           return;
         }
 
+        navigatedToResult = true;
         navigate(ruta);
       } catch (e) {
         setError(e instanceof BotCheckRejectedError ? TURNSTILE_MESSAGE : NAVE_NODRIZA_MESSAGE);
       } finally {
-        // El token es de un solo uso: salga como salga, el próximo intento
-        // lleva uno nuevo.
-        resetTurnstile();
+        // El token es de un solo uso. Si la persona se queda en esta pantalla
+        // (error, registro pendiente, límite), se pide ya un desafío nuevo para
+        // que el reintento tenga token. Si se fue a una pantalla de resultado,
+        // no: el próximo canje lo pide recién cuando lo necesite (ver
+        // `getTurnstileToken`), así el checkbox no aparece donde no hay nada
+        // que enviar.
+        if (!navigatedToResult) resetTurnstile();
         inFlight.current = false;
         setLoading(false);
       }
