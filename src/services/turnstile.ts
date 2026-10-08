@@ -57,6 +57,12 @@ export function isTurnstileEnabled(): boolean {
 let widgetId: string | null = null;
 /** Token vigente todavía no entregado. Se vacía al entregarlo (un solo uso). */
 let token = '';
+/**
+ * Último token entregado. Hasta el `reset`, `turnstile.getResponse()` lo sigue
+ * devolviendo, y la red de seguridad de `getTurnstileToken` no debe
+ * entregarlo por segunda vez: es de un solo uso.
+ */
+let handedOut = '';
 /** Canjes esperando token, en orden de llegada: el próximo token va al primero. */
 let waiters: Array<(value: string | undefined) => void> = [];
 let scriptPromise: Promise<void> | null = null;
@@ -108,22 +114,34 @@ function loadScript(): Promise<void> {
       reject(new Error('No se pudo cargar Turnstile'));
     };
 
+    // Un tag que falló se saca del DOM: ya no va a disparar nada y, si queda,
+    // el próximo reintento lo encontraría como «existente» y esperaría en vano.
+    const attach = (script: HTMLScriptElement) => {
+      script.addEventListener('load', onLoad, { once: true });
+      script.addEventListener(
+        'error',
+        () => {
+          script.remove();
+          onError();
+        },
+        { once: true },
+      );
+    };
+
     // Si ya hay un api.js en la página (otro montaje, HMR), se espera a ése en
     // vez de inyectar un segundo: Turnstile avisa si se carga dos veces.
     const existing = document.querySelector<HTMLScriptElement>(
       'script[src^="https://challenges.cloudflare.com/turnstile/v0/api.js"]',
     );
     if (existing) {
-      existing.addEventListener('load', onLoad, { once: true });
-      existing.addEventListener('error', onError, { once: true });
+      attach(existing);
       return;
     }
 
     const el = document.createElement('script');
     el.src = SCRIPT_URL;
     el.async = true;
-    el.onload = onLoad;
-    el.onerror = onError;
+    attach(el);
     document.head.appendChild(el);
   });
   return scriptPromise;
@@ -158,8 +176,12 @@ export function mountTurnstile(container: HTMLElement, hooks: TurnstileHooks = {
           // Un solo uso: va al canje que esperaba primero; si nadie espera,
           // queda guardado para el próximo.
           const next = waiters.shift();
-          if (next) next(value);
-          else token = value;
+          if (next) {
+            handedOut = value;
+            next(value);
+          } else {
+            token = value;
+          }
         },
         'expired-callback': () => {
           // Turnstile lo renueva solo; el próximo `callback` trae el nuevo.
@@ -232,14 +254,14 @@ export function getTurnstileToken(): Promise<string | undefined> {
     const id = widgetId;
     safely('getResponse', () => {
       const live = window.turnstile?.getResponse(id);
-      if (live && !window.turnstile?.isExpired(id)) token = live;
+      if (live && live !== handedOut && !window.turnstile?.isExpired(id)) token = live;
     });
   }
 
   if (token) {
-    const handed = token;
+    handedOut = token;
     token = '';
-    return Promise.resolve(handed);
+    return Promise.resolve(handedOut);
   }
 
   if (fatal) return Promise.resolve(undefined);
