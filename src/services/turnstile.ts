@@ -241,6 +241,7 @@ export function unmountTurnstile(): void {
   }
   widgetId = null;
   token = '';
+  handedOut = '';
   lastMount = null;
   resolveWaiters(undefined);
 }

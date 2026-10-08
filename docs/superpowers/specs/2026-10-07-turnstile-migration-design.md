@@ -23,7 +23,7 @@ borra en el backend.
 
 Referencia: la misma migración ya se hizo en `promo-codigo/client` (componente Lit en
 shadow DOM). Acá es más simple porque React renderiza en el DOM normal, pero el manejo
-del token (un solo uso, reset tras cada envío, espera acotada) se copia de ahí.
+del token (un solo uso, reset tras cada intento fallido, y perezoso tras un resultado, espera acotada) se copia de ahí.
 
 ## Decisiones
 
@@ -258,7 +258,7 @@ El repo no tiene test runner y no se agrega ninguna dependencia (regla de
 
 | Sitekey de prueba | Qué se espera |
 | --- | --- |
-| `1x00000000000000000000AA` (siempre pasa) | Al cargar no se ve nada; al participar el POST va a `/api/v2/codes/redeem` con `turnstileToken`; tras la respuesta el widget se resetea (nuevo token en consola de red). Participar → Registro → canje consume un solo token. |
+| `1x00000000000000000000AA` (siempre pasa) | Al cargar no se ve nada; al participar el POST va a `/api/v2/codes/redeem` con `turnstileToken`; en la pantalla de resultado NO hay tráfico nuevo a Cloudflare (el widget no se resetea ahí); al volver a Participar y canjear de nuevo, sí (reset perezoso). Participar → Registro → canje consume un solo token. |
 | `3x00000000000000000000FF` (fuerza interacción) | Aparece el widget abajo a la derecha, clickeable, en escritorio y a 390 px de ancho; tras el click el canje sigue solo. |
 | `2x00000000000000000000AB` (siempre bloquea) | A los 20 s aparece el mensaje de seguridad y **no** hay POST. |
 
