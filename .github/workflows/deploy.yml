@@ -55,20 +55,30 @@ jobs:
       #
       # Se leen de `vars`, no de `secrets`, y a propósito: quedan incrustadas en
       # el bundle, así que sólo pueden contener valores PÚBLICOS. La URL del
-      # backend y la clave de sitio de reCAPTCHA lo son. Nunca poner acá la
-      # clave secreta de reCAPTCHA ni credenciales de Avimovil.
+      # backend y la sitekey de Turnstile lo son. Nunca poner acá el secret de
+      # Turnstile ni credenciales de Avimovil.
       #
       # Hay que cargarlas antes en Settings → Secrets and variables → Actions →
       # Variables:
       #   VITE_API_URL=https://promo.edge.com.py/purosol
-      #   VITE_RECAPTCHA_SITE_KEY=6LfcYIQtAAAAAAqpWHzZ6y-cTCPOPEBXIu8XJWOD
+      #   VITE_TURNSTILE_SITE_KEY=<sitekey del widget de Cloudflare>
       #
       # Si las variables no existen, `vars.X` se resuelve como cadena vacía y el
       # sitio vuelve al mock: el mismo comportamiento que hoy, sin romperse.
+      # Con backend real y sin sitekey de Turnstile, el sitio publicado daría
+      # 403 en todos los canjes: el backend (V2) no acepta canjes sin token.
+      # Mejor que el build falle acá. Sin NINGUNA de las dos variables el sitio
+      # cae al mock, como siempre.
+      - name: Turnstile sitekey obligatoria si hay backend
+        if: ${{ vars.VITE_API_URL != '' && vars.VITE_TURNSTILE_SITE_KEY == '' }}
+        run: |
+          echo "::error::VITE_API_URL está cargada pero VITE_TURNSTILE_SITE_KEY no. Cargala en Settings → Secrets and variables → Actions → Variables."
+          exit 1
+
       - run: npm run build
         env:
           VITE_API_URL: ${{ vars.VITE_API_URL }}
-          VITE_RECAPTCHA_SITE_KEY: ${{ vars.VITE_RECAPTCHA_SITE_KEY }}
+          VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY }}
 
       - uses: actions/configure-pages@v6
 

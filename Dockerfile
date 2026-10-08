@@ -13,12 +13,20 @@ RUN npm ci
 # cambiarlas obliga a reconstruir la imagen. Se sobreescriben al construir:
 #   docker build \
 #     --build-arg VITE_API_URL=https://mi-backend \
-#     --build-arg VITE_RECAPTCHA_SITE_KEY=6L... .
-# La site key es pública (viaja al navegador); acá sólo se fija el default.
+#     --build-arg VITE_TURNSTILE_SITE_KEY=0x4AAA... .
+# La sitekey es pública (viaja al navegador) pero NO tiene default: la real se
+# pasa al construir.
 ARG VITE_API_URL=https://promo.edge.com.py/purosol
-ARG VITE_RECAPTCHA_SITE_KEY=6LfcYIQtAAAAAAqpWHzZ6y-cTCPOPEBXIu8XJWOD
+ARG VITE_TURNSTILE_SITE_KEY
 ENV VITE_API_URL=$VITE_API_URL \
-    VITE_RECAPTCHA_SITE_KEY=$VITE_RECAPTCHA_SITE_KEY
+    VITE_TURNSTILE_SITE_KEY=$VITE_TURNSTILE_SITE_KEY
+
+# Con backend real y sin sitekey, todo canje daría 403 (el backend V2 exige
+# token): mejor fallar acá que publicar eso.
+RUN if [ -n "$VITE_API_URL" ] && [ -z "$VITE_TURNSTILE_SITE_KEY" ]; then \
+      echo "VITE_API_URL está cargada pero VITE_TURNSTILE_SITE_KEY no: pasala con --build-arg." >&2; \
+      exit 1; \
+    fi
 
 # Código y build. `npm run build` = tsc -b && vite build → dist/.
 # .dockerignore deja fuera .env para que manden estos ARG y no el .env local.
