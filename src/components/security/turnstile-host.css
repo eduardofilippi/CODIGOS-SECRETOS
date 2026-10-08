@@ -13,10 +13,12 @@
   pointer-events: none;
 }
 
-.turnstile-host * {
+/* `.turnstile-host--interactive` la pone el componente entre
+   `before-interactive-callback` y `after-interactive-callback`, o sea sólo
+   mientras Cloudflare muestra el checkbox. Recién ahí el widget recibe taps:
+   cómo oculta Turnstile su iframe mientras es invisible no está documentado,
+   y un contenedor invisible pero con tamaño se tragaría los toques de la
+   esquina inferior derecha en todas las pantallas. */
+.turnstile-host--interactive * {
   pointer-events: auto;
 }
-
-/* `.turnstile-host--interactive` la pone el componente mientras Cloudflare
-   muestra el checkbox. Es un gancho para resaltar el contenedor; por ahora no
-   tiene estilos propios, así que no se declara. */

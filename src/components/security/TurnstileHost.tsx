@@ -35,10 +35,18 @@ export function TurnstileHost() {
   if (!isTurnstileEnabled()) return null;
 
   return (
-    <div
-      ref={ref}
-      className={`turnstile-host${interactive ? ' turnstile-host--interactive' : ''}`}
-      aria-live="polite"
-    />
+    <>
+      {/* Turnstile mete su iframe acá adentro: React no debe renderizar hijos
+          en este nodo, sólo tocarle la clase. */}
+      <div
+        ref={ref}
+        className={`turnstile-host${interactive ? ' turnstile-host--interactive' : ''}`}
+      />
+      {/* Aviso para lectores de pantalla: el checkbox aparece en una esquina
+          sin relación con el formulario, así que se anuncia cuando sale. */}
+      <p className="sr-only" role="status">
+        {interactive ? 'Verificación de seguridad: marcá la casilla que aparece abajo a la derecha.' : ''}
+      </p>
+    </>
   );
 }
