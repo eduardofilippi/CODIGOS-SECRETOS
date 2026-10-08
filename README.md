@@ -9,7 +9,7 @@
 >    con qué stack, y los seis endpoints con request y response de ejemplo.
 > 2. **[docs/LOGICA-BACKEND.md](docs/LOGICA-BACKEND.md)** — qué tiene que
 >    decidir el servidor. Cómo se elige el premio (sale del **calendario**, no
->    del código), qué API usa cada pantalla, el flujo con reCAPTCHA y los puntos
+>    del código), qué API usa cada pantalla, el flujo con Turnstile y los puntos
 >    que faltan confirmar con el cliente.
 > 3. **[docs/PREMIOS-2026.md](docs/PREMIOS-2026.md)** — los 19 premios con sus
 >    `id`, que son el contrato para devolver el premio ganado.

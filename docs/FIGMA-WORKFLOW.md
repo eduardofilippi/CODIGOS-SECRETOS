@@ -102,6 +102,11 @@ npm run figma:check registro-mobile
 npm run figma:check -- --all
 ```
 
+Correrlo con `VITE_TURNSTILE_SITE_KEY` vacía en `.env` (o comentada). Con una
+sitekey cargada, Chromium headless suele disparar el checkbox de Turnstile, que
+aparece como un bloque abajo a la derecha y ensucia el diff de píxeles; además
+su tráfico en segundo plano demora el `networkidle` que espera el script.
+
 Hace tres comprobaciones distintas, y la primera es la que importa:
 
 **Capa por capa.** Todo elemento del DOM con `data-figma="23:3163"` se mide y se

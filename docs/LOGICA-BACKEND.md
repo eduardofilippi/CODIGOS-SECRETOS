@@ -29,14 +29,14 @@ sabría a qué hora conviene cargar un código.
 USUARIO
   ↓  cédula + código
 FRONTEND
-  ↓  genera token de reCAPTCHA (acción "redeem_code")
-POST /api/codes/redeem
-  { "cedula": "1234567", "code": "XXXXXXX", "recaptchaToken": "..." }
+  ↓  toma el token de Turnstile (acción "redeem_code"; el desafío corre desde que cargó la página)
+POST /api/v2/codes/redeem
+  { "cedula": "1234567", "code": "XXXXXXX", "turnstileToken": "..." }
   ↓
 BACKEND
   │
-  ├─ 1. Verifica el token con Google (clave SECRETA, sólo del servidor)
-  │     ¿válido y score confiable?
+  ├─ 1. Verifica el token con Cloudflare (clave SECRETA, sólo del servidor)
+  │     ¿válido?
   │        NO  → rechaza. No mira el código, no lo consume, no suma al contador.
   │        SÍ  → sigue
   │
@@ -316,24 +316,33 @@ cuatro pantallas de resultado, incluso en las dos que no suman.
 
 ---
 
-## 5. reCAPTCHA
+## 5. Turnstile
 
-Pendiente de que lleguen las claves. El cableado del frontend ya está hecho:
-[`src/services/recaptcha.ts`](../src/services/recaptcha.ts).
+El canje viaja con un token de **Cloudflare Turnstile** (reemplazó a reCAPTCHA v3
+en octubre de 2026). El cableado del frontend está en
+[`src/services/turnstile.ts`](../src/services/turnstile.ts) y el widget vive en
+[`src/components/security/TurnstileHost.tsx`](../src/components/security/TurnstileHost.tsx):
+un contenedor fijo abajo a la derecha, invisible salvo que Cloudflare pida un click.
 
 | Dónde | Qué |
 | --- | --- |
-| Frontend | `VITE_RECAPTCHA_SITE_KEY` — clave **del sitio**, pública, viaja al navegador |
-| Backend | clave **secreta** — nunca sale del servidor, nunca en una variable `VITE_` |
+| Frontend | `VITE_TURNSTILE_SITE_KEY` — clave **del sitio**, pública, viaja al navegador |
+| Backend | `TURNSTILE_SECRET_KEY` — clave **secreta**, nunca sale del servidor, nunca en una variable `VITE_` |
 
-Con la variable vacía el sitio no carga nada de Google y manda el canje sin
-`recaptchaToken`. **El backend decide qué hacer en ese caso**: durante el
-desarrollo conviene aceptarlo; en producción, rechazarlo.
+Con la variable vacía el sitio no carga nada de Cloudflare y manda el canje sin
+`turnstileToken` (sirve para la demo con el adapter mock). **Contra el backend
+real eso no alcanza**: `POST /api/v2/codes/redeem` rechaza con `403` todo canje
+sin token o con token inválido, sin consumir el código.
 
-El token es de un solo uso, caduca a los dos minutos y se verifica **antes** de
-tocar el código, para que un bot no queme códigos ni consuma premios. Si Google
-no responde a tiempo, el frontend manda el canje sin token en vez de bloquear a
-la persona: la decisión final es del servidor.
+El token es de un solo uso y vive 5 minutos; el desafío corre en segundo plano
+desde que carga la página, así que al tocar «Participar» casi siempre ya está.
+El frontend espera hasta 20 s a que llegue; si no llega, muestra «No pudimos
+completar la verificación de seguridad…» y **no** manda el canje. Después de
+cada canje el widget se resetea para que el próximo intento lleve un token nuevo.
+
+Para probar en local sin claves reales, Cloudflare publica sitekeys de prueba
+(ver `.env.example`): `1x…AA` siempre pasa, `3x…FF` fuerza el checkbox en la
+esquina, `2x…AB` bloquea siempre.
 
 ---
 

@@ -5,7 +5,7 @@ Todo lo que necesita el equipo de backend para conectar su capa al microsite.
 | Documento | Qué contiene |
 | --- | --- |
 | **[GUIA-BACKEND.md](GUIA-BACKEND.md)** | **Empezá acá.** Qué se entregó, con qué stack, cómo está preparada la conexión y los seis endpoints con request y response de ejemplo. |
-| [LOGICA-BACKEND.md](LOGICA-BACKEND.md) | Qué tiene que decidir el servidor: cómo se elige el premio, qué API usa cada pantalla, el flujo con reCAPTCHA y lo que falta confirmar con el cliente. |
+| [LOGICA-BACKEND.md](LOGICA-BACKEND.md) | Qué tiene que decidir el servidor: cómo se elige el premio, qué API usa cada pantalla, el flujo con Turnstile y lo que falta confirmar con el cliente. |
 | [PREMIOS-2026.md](PREMIOS-2026.md) | Los 19 premios de la campaña con sus `id`, cantidades e imágenes. Los `id` son el contrato para devolver el premio ganado. |
 
 ## Las tres cosas que hay que entender antes de programar

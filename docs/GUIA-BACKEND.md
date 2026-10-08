@@ -9,7 +9,7 @@ Qué se construyó del lado del frontend, con qué tecnología, y **exactamente 
 | Orden | Documento | Para qué |
 | --- | --- | --- |
 | 1 | **Esta guía** | Qué hay hecho, con qué stack, y los seis endpoints con request y response de ejemplo. |
-| 2 | [`LOGICA-BACKEND.md`](LOGICA-BACKEND.md) | Qué tiene que **decidir** el servidor: cómo se elige el premio, qué API usa cada pantalla, reCAPTCHA y lo que falta confirmar con el cliente. |
+| 2 | [`LOGICA-BACKEND.md`](LOGICA-BACKEND.md) | Qué tiene que **decidir** el servidor: cómo se elige el premio, qué API usa cada pantalla, Turnstile y lo que falta confirmar con el cliente. |
 | 3 | [`PREMIOS-2026.md`](PREMIOS-2026.md) | Los 19 premios con sus `id`, que son el contrato para devolver el premio ganado. |
 
 Antes de leer nada, conviene abrir el sitio y usarlo:
@@ -194,16 +194,16 @@ Cuidado con la zona horaria al calcular la edad: `new Date("2008-08-13")` se int
 ### 4.3 Cargar un código — **la operación central**
 
 ```
-POST /api/codes/redeem
+POST /api/v2/codes/redeem
 ```
 
 **Body**
 
 ```json
-{ "cedula": "1234567", "code": "ABCDG847FR5", "recaptchaToken": "03AFcW..." }
+{ "cedula": "1234567", "code": "ABCDG847FR5", "turnstileToken": "0.AbCd..." }
 ```
 
-`recaptchaToken` viaja vacío mientras no haya claves cargadas. **Se verifica contra Google ANTES de mirar el código**: si no es válido, se rechaza sin consumir nada. Detalle en [`LOGICA-BACKEND.md`](LOGICA-BACKEND.md#5-recaptcha).
+`turnstileToken` lo genera Cloudflare Turnstile en el navegador. **Se verifica contra Cloudflare ANTES de mirar el código**: si falta o no es válido, el backend responde `403` sin consumir nada. Detalle en [`LOGICA-BACKEND.md`](LOGICA-BACKEND.md#5-turnstile).
 
 **Cómo se decide el premio cuando el status es `WIN`** —la pregunta central— está desarrollada en [`LOGICA-BACKEND.md`](LOGICA-BACKEND.md#3-cómo-se-decide-qué-premio-sale): sale del calendario, no del código, y necesita bloqueo por concurrencia.
 

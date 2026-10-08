@@ -6,7 +6,7 @@ composición visual.
 
 Debe probarse primero en `https://promos.metis.com.py/` y después copiarse al
 servidor del dominio definitivo. La configuración permite las conexiones del
-frontend con `https://promo.edge.com.py`, reCAPTCHA Enterprise y los recursos
+frontend con `https://promo.edge.com.py`, Cloudflare Turnstile y los recursos
 propios del sitio.
 
 ## Instalación en Nginx
@@ -40,7 +40,7 @@ sudo systemctl reload nginx
 
 1. Abrir todas las pantallas en desktop, Android e iPhone.
 2. Confirmar que cargan imágenes, fuentes y archivos JavaScript.
-3. Ejecutar un único canje autorizado y comprobar reCAPTCHA y backend.
+3. Ejecutar un único canje autorizado y comprobar Turnstile y backend.
 4. Revisar las cabeceras públicas:
 
 ```bash
@@ -52,4 +52,4 @@ Deben aparecer CSP, HSTS, `X-Content-Type-Options`, `Referrer-Policy`,
 
 HSTS no incluye `includeSubDomains` en esta etapa para no afectar otros
 subdominios del cliente. Al pasar a producción deben confirmarse también el
-dominio final en reCAPTCHA Enterprise y en la lista CORS del backend.
+dominio final en la lista de hostnames del widget de Turnstile (panel de Cloudflare; sin eso Turnstile falla con el error 110200 y ningún canje pasa) y en la lista CORS del backend.

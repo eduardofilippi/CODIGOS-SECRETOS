@@ -16,6 +16,9 @@ RUN npm ci
 #     --build-arg VITE_TURNSTILE_SITE_KEY=0x4AAA... .
 # La sitekey es pública (viaja al navegador) pero NO tiene default: la real se
 # pasa al construir.
+# Un `docker build .` a secas FALLA a propósito: VITE_API_URL apunta por defecto
+# al backend real y sin sitekey todo canje daría 403. Para una imagen con el
+# adapter mock (sin backend): `--build-arg VITE_API_URL=`.
 ARG VITE_API_URL=https://promo.edge.com.py/purosol
 ARG VITE_TURNSTILE_SITE_KEY
 ENV VITE_API_URL=$VITE_API_URL \
