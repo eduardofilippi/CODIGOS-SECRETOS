@@ -166,8 +166,8 @@ backend.**
 | Pantalla | Ruta | Cuándo llama | Endpoint |
 | --- | --- | --- | --- |
 | Inicio | `/` | — | ninguno |
-| Vista principal | `/participar` | al apretar **Participar** | `GET /api/participants/{cedula}` → `POST /api/codes/redeem` |
-| Registro | `/registro` | al apretar **Registrarme** | `POST /api/participants` → `POST /api/codes/redeem` |
+| Vista principal | `/participar` | al apretar **Participar** | `GET /api/participants/{cedula}` → `POST /api/v2/codes/redeem` |
+| Registro | `/registro` | al apretar **Registrarme** | `POST /api/participants` → `POST /api/v2/codes/redeem` |
 | Premios | `/premios` | al abrir | `GET /api/prizes` |
 | Dónde está el código | `/donde-esta-el-codigo` | — | ninguno |
 | Bases y condiciones | `/bases` | al abrir | `GET /api/terms` |
@@ -187,7 +187,7 @@ saberlo al probar.
 ```
 /participar   [Participar]
    ↓  GET /api/participants/4582913        → { "registered": true, "participant": {...} }
-   ↓  POST /api/codes/redeem               → { "status": "WIN", "prize": {...}, "codeCount": 4 }
+   ↓  POST /api/v2/codes/redeem            → { "status": "WIN", "prize": {...}, "codeCount": 4 }
 /ganaste
 ```
 
@@ -198,7 +198,7 @@ saberlo al probar.
    ↓  GET /api/participants/4582913        → { "registered": false }
 /registro     (conserva cédula y código en memoria del navegador)
    ↓  POST /api/participants               → { "ok": true, "participant": {...} }
-   ↓  POST /api/codes/redeem               → { "status": "LOSE", "codeCount": 1 }
+   ↓  POST /api/v2/codes/redeem            → { "status": "LOSE", "codeCount": 1 }
 /perdiste
 ```
 
@@ -245,7 +245,7 @@ debajo), distinta de la horizontal que se usa hoy en mobile.
 ### 4.1 Vista principal — `/participar` (lámina 1)
 
 Pide cédula y código. Al enviar, el frontend llama primero a
-`GET /api/participants/{cedula}` y después a `POST /api/codes/redeem`.
+`GET /api/participants/{cedula}` y después a `POST /api/v2/codes/redeem`.
 
 Valida sólo formato (campos completos, cédula de 5 a 15 dígitos, código de 4 o
 más). **Eso no es seguridad**: el backend valida todo de nuevo.
@@ -333,9 +333,11 @@ Con la variable vacía el sitio no carga nada de Cloudflare y manda el canje sin
 `turnstileToken` (sirve para la demo con el adapter mock). **Contra el backend
 real eso no alcanza**: `POST /api/v2/codes/redeem` rechaza con `403` todo canje
 sin token o con token inválido, sin consumir el código.
+El widget se renderiza con la acción "redeem_code"; si el backend recibe otra,
+también responde 403 (reason: "action-mismatch").
 
 El token es de un solo uso y vive 5 minutos; el desafío corre en segundo plano
-desde que carga la página, así que al tocar «Participar» casi siempre ya está.
+desde que carga la página, así que al momento del canje casi siempre ya está.
 El frontend espera hasta 20 s a que llegue; si no llega, muestra «No pudimos
 completar la verificación de seguridad…» y **no** manda el canje. Después de
 cada canje el widget se resetea para que el próximo intento lleve un token nuevo.

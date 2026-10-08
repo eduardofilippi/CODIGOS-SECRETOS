@@ -52,4 +52,6 @@ Deben aparecer CSP, HSTS, `X-Content-Type-Options`, `Referrer-Policy`,
 
 HSTS no incluye `includeSubDomains` en esta etapa para no afectar otros
 subdominios del cliente. Al pasar a producción deben confirmarse también el
-dominio final en la lista de hostnames del widget de Turnstile (panel de Cloudflare; sin eso Turnstile falla con el error 110200 y ningún canje pasa) y en la lista CORS del backend.
+dominio final en la lista de hostnames del widget de Turnstile (panel de
+Cloudflare; sin eso Turnstile falla con el error 110200 y ningún canje pasa) y
+en la lista CORS del backend.

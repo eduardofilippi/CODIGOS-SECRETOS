@@ -17,9 +17,8 @@
 > Lo mínimo que hay que saber: el frontend **no decide nada**. Manda cédula y
 > código, y pinta la pantalla del `status` que le devuelven —`WIN`, `LOSE`,
 > `CODE_ALREADY_USED`, `CODE_NOT_FOUND`, `REGISTER_REQUIRED`—. Hoy responde un
-> adapter con datos de ejemplo; conectar el backend real es cambiar **una
-> línea** en [`src/services/promoApi.ts`](src/services/promoApi.ts), sin tocar
-> ninguna pantalla.
+> adapter con datos de ejemplo; conectar el backend real es cargar
+> `VITE_API_URL` (y `VITE_TURNSTILE_SITE_KEY`), sin tocar ninguna pantalla.
 >
 > El sitio de arriba ya funciona de punta a punta contra esos datos de ejemplo:
 > sirve para ver qué se espera de cada respuesta antes de escribir nada.
@@ -36,8 +35,34 @@ Funciona en desktop y en celular: cada pantalla tiene su propia composición
 mobile tomada del Figma de 402 px, no es la vista de escritorio encogida.
 Probalo achicando la ventana por debajo de 900 px o entrando desde el teléfono.
 
-Abajo a la derecha hay un selector de escenarios para forzar cada resultado
-—ganaste, perdiste, código usado, código inexistente— sin depender del backend.
+En desarrollo (`npm run dev`) aparece abajo a la derecha un selector de escenarios para forzar cada resultado
+—ganaste, perdiste, código usado, código inexistente— sin depender del backend. En el sitio publicado esa esquina es de Turnstile: si Cloudflare pide confirmar que sos humano, el checkbox aparece ahí.
+
+## 🚀 Despliegue con Turnstile
+
+En este orden:
+
+1. **Backend V2 publicado.** `POST /api/v2/codes/redeem` sin token tiene que
+   responder `403 { "reason": "missing-token" }` (ver el README de
+   `codigos-secretos-backend`, sección «Despliegue»).
+2. **Widget en Cloudflare.** Turnstile → widget **Managed** con los hostnames
+   `localhost`, `yenifmnm.github.io`, `promos.metis.com.py` y el dominio final.
+   Si falta el hostname, Turnstile falla con el error **110200** y ningún canje
+   pasa. La sitekey va acá; el secret, al backend (`TURNSTILE_SECRET_KEY`).
+3. **Variable en GitHub, ANTES de mergear a `main`.** Settings → Secrets and
+   variables → Actions → Variables → `VITE_TURNSTILE_SITE_KEY`. Si
+   `VITE_API_URL` está cargada y la sitekey no, el workflow de Pages falla a
+   propósito.
+4. **CSP en Nginx** (homologación y dominio final): instalar
+   `deploy/security-headers.conf` como indica
+   [docs/SEGURIDAD-SERVIDOR.md](docs/SEGURIDAD-SERVIDOR.md). Sin
+   `challenges.cloudflare.com` el widget no carga.
+5. **CORS del backend** con el origen publicado (`CORS_ORIGIN`).
+6. **Humo:** un canje real desde el sitio publicado. En la pestaña Red, el
+   `POST /api/v2/codes/redeem` lleva `turnstileToken` y no vuelve `403`.
+7. Avisar al backend para que retire la V1 y reCAPTCHA.
+
+Para probar en local sin claves reales: sitekeys de prueba en `.env.example`.
 
 ## 🗺️ Recorrido del sitio
 
