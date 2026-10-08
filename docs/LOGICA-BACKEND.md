@@ -338,9 +338,9 @@ también responde 403 (reason: "action-mismatch").
 
 El token es de un solo uso y vive 5 minutos; el desafío corre en segundo plano
 desde que carga la página, así que al momento del canje casi siempre ya está.
-El frontend espera hasta 20 s a que llegue; si no llega, muestra «No pudimos
-completar la verificación de seguridad…» y **no** manda el canje. Después de
-cada canje el widget se resetea para que el próximo intento lleve un token nuevo.
+El frontend espera hasta 20 s a que llegue; si no llega, muestra «No pasó la
+verificación de seguridad…» y **no** manda el canje. Después de cada canje el
+widget se resetea para que el próximo intento lleve un token nuevo.
 
 Para probar en local sin claves reales, Cloudflare publica sitekeys de prueba
 (ver `.env.example`): `1x…AA` siempre pasa, `3x…FF` fuerza el checkbox en la

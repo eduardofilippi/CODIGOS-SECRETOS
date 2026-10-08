@@ -188,7 +188,7 @@ try {
 
 Constantes del módulo:
 
-- `TURNSTILE_MESSAGE = 'No pudimos completar la verificación de seguridad. Esperá un momento y volvé a intentar.'` (nueva).
+- `TURNSTILE_MESSAGE = 'No pasó la verificación de seguridad. Probá de nuevo en un momento.'` (nueva).
 - `NAVE_NODRIZA_MESSAGE = 'No pudimos contactar la nave nodriza. Probá de nuevo en un momento.'`: el
   texto que hoy está repetido inline en `redeem` y `submit`, extraído a una constante.
 

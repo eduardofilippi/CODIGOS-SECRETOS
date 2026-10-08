@@ -43,8 +43,7 @@ const NAVE_NODRIZA_MESSAGE =
  * No hay token de Turnstile (no llegó en 20 s) o el backend lo rechazó. Se
  * pide reintentar: el widget ya se reseteó y está generando uno nuevo.
  */
-const TURNSTILE_MESSAGE =
-  'No pudimos completar la verificación de seguridad. Esperá un momento y volvé a intentar.';
+const TURNSTILE_MESSAGE = 'No pasó la verificación de seguridad. Probá de nuevo en un momento.';
 
 /**
  * Orquesta el flujo de participación.
