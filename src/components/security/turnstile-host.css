@@ -1,0 +1,22 @@
+/* ---------- Contenedor único del widget de Turnstile ---------- */
+/* Fijo abajo a la derecha, donde estaba la insignia de reCAPTCHA. Con
+   `appearance: 'interaction-only'` Cloudflare lo deja invisible salvo que
+   necesite un click: por eso no tiene fondo ni tamaño propio. */
+.turnstile-host {
+  position: fixed;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(16px, env(safe-area-inset-bottom));
+  /* Por encima de todo lo del sitio (máximo actual: 999); por debajo del
+     ScenarioSwitcher de desarrollo (9999). */
+  z-index: 1000;
+  /* Mientras el widget está invisible, el contenedor no debe tragarse ningún tap. */
+  pointer-events: none;
+}
+
+.turnstile-host * {
+  pointer-events: auto;
+}
+
+/* `.turnstile-host--interactive` la pone el componente mientras Cloudflare
+   muestra el checkbox. Es un gancho para resaltar el contenedor; por ahora no
+   tiene estilos propios, así que no se declara. */

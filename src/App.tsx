@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect } from 'react';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { SessionProvider } from './app/SessionContext';
 import { ScenarioSwitcher } from './components/dev/ScenarioSwitcher';
+import { TurnstileHost } from './components/security/TurnstileHost';
 import cursorAnchor from './assets/ui/cursor-ancla-32.png';
 
 /**
@@ -70,6 +71,8 @@ export function App() {
           </Routes>
         </Suspense>
         <ScenarioSwitcher />
+        {/* Widget anti-bot, uno solo para toda la app; ver el componente. */}
+        <TurnstileHost />
       </HashRouter>
     </SessionProvider>
   );
